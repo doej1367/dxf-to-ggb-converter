@@ -20,7 +20,7 @@
     <h3>1. Select an ALKIS-DXF file</h3>
     <input id="inputfile" type="file" name="inputfile" />
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
-    <div id="layerList"></div>
+    <table id="layerList"></table>
     <h3>3. Export the data as a GGB file for Geogebra</h3>
     <button id="submit">Export to GGB</button>
     <br />
@@ -214,47 +214,64 @@
         // 2. provide an option to asign point/line/text types
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
         // 3. collect the remaining ones afterwards
-        let layerList = document.getElementById("layerList");
-        layerList.textContent = "";
+
+        // sort usedLayerEntryTypes
+        //usedLayerEntryTypes = new Map(
+        //  Array.from(usedLayerEntryTypes).sort((a, b) =>
+        //    String(a[0]).localeCompare(b[0])
+        //  )
+        //);
+
+        // show usedLayerEntryTypes
+        let layerTable = document.getElementById("layerList");
+        layerTable.textContent = "";
         for (const key in usedLayerEntryTypes) {
           const entryType = usedLayerEntryTypes[key];
           // create layer item
-          let listItem = document.createElement("div");
-          listItem.id = key;
+          let tableRow = layerTable.insertRow(-1);
+          tableRow.id = key;
           // selected - are the items of this layer included in the export?
-          let selectedSelectorId = "selected";
+          let cell0 = tableRow.insertCell(0);
+          let selectedSelectorId = key + "_selected";
           let selectCheckbox = document.createElement("input");
+          selectCheckbox.class = "selected";
           selectCheckbox.type = "checkbox";
           selectCheckbox.id = selectedSelectorId;
-          listItem.appendChild(selectCheckbox);
-          // label
+          cell0.appendChild(selectCheckbox);
+          // selected - label
+          let labelId = key + "_label";
           let label = document.createElement("label");
           label.textContent = key;
-          listItem.appendChild(label);
+          label.htmlFor = selectedSelectorId;
+          label.id = labelId;
+          cell0.appendChild(label);
           // point or line style for the items of this layer
-          let styleSelectorId = "style";
+          let cell1 = tableRow.insertCell(1);
+          let styleSelectorId = key + "_style";
           let styleSelector =
             entryType.type == "INSERT" || entryType.type == "TEXT"
               ? createPointStyleSelector(styleSelectorId)
               : createLineStyleSelector(styleSelectorId);
-          listItem.appendChild(styleSelector);
+          cell1.appendChild(styleSelector);
           // color for the items of this layer
-          let colorSelectorId = "color";
+          let cell2 = tableRow.insertCell(2);
+          let colorSelectorId = key + "_color";
           let colorSelector = document.createElement("input");
+          selectCheckbox.class = "color";
           colorSelector.type = "color";
           colorSelector.value = entryType.color;
           colorSelector.id = colorSelectorId;
-          listItem.appendChild(colorSelector);
+          cell2.appendChild(colorSelector);
           // size for the items of this layer
-          let sizeSelectorId = "size";
+          let cell3 = tableRow.insertCell(3);
+          let sizeSelectorId = key + "_size";
           let sizeSelector = document.createElement("input");
+          selectCheckbox.class = "size";
           sizeSelector.type = "number";
           sizeSelector.size = 4;
           sizeSelector.min = 1;
           sizeSelector.max = entryType.type == "INSERT" ? 9 : 13;
-          listItem.appendChild(sizeSelector);
-          // append layer item
-          layerList.appendChild(listItem);
+          cell3.appendChild(sizeSelector);
         }
 
         // TODO add an option to move all points by two values towards the origin (0, 0)
