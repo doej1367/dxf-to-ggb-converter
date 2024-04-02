@@ -25,6 +25,9 @@
       "use strict";
 
       let fileName = "test";
+      let points = {};
+      let ggbSegments = {};
+      let texts = {};
 
       // add listener for file input
       let fileInputElement = document.getElementById("inputfile");
@@ -78,11 +81,8 @@
         const layers = dxf.tables.layer.layers;
         let usedLayerEntryTypes = {};
 
-        let points = {};
         let vectorToPointMap = {};
         let lines = {};
-        let ggbSegments = {};
-        let texts = {};
 
         // find additional info in dxf.blocks
         let additionalInfos = {};
@@ -101,19 +101,20 @@
             " " +
             entity.layer +
             (entity.name ? " " + entity.name : "");
-          usedLayerEntryTypes[layerEntryType] = {};
-          usedLayerEntryTypes[layerEntryType].type = entity.type;
-          usedLayerEntryTypes[layerEntryType].subtype = entity.name;
-          usedLayerEntryTypes[layerEntryType].layer = entity.layer;
-          usedLayerEntryTypes[layerEntryType].color =
-            "#" +
-            layers[entity.layer].color
-              .toString(16)
-              .toLowerCase()
-              .padStart(6, 0);
+          if (!usedLayerEntryTypes[layerEntryType]) {
+            usedLayerEntryTypes[layerEntryType] = {};
+            usedLayerEntryTypes[layerEntryType].type = entity.type;
+            usedLayerEntryTypes[layerEntryType].subtype = entity.name;
+            usedLayerEntryTypes[layerEntryType].layer = entity.layer;
+            usedLayerEntryTypes[layerEntryType].color =
+              "#" +
+              layers[entity.layer].color
+                .toString(16)
+                .toLowerCase()
+                .padStart(6, 0);
+          }
 
           let key;
-          let vectorKey;
           switch (entity.type) {
             case "INSERT":
               key = "P" + parseHandle(entity.handle);
@@ -121,12 +122,13 @@
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
-              points[key].type = pointTypesMap[entity.name.replace("ABM_", "")];
+              points[key].subtype =
+                pointTypesMap[entity.name.replace("ABM_", "")];
               const info = additionalInfos[entity.name];
               if (info.layer == entity.layer) {
                 points[key].comment = info.comment;
               }
-              vectorKey = entity.position.x + "," + entity.position.y;
+              let vectorKey = entity.position.x + "," + entity.position.y;
               vectorToPointMap[vectorKey] = key;
               break;
             case "LINE":
@@ -154,39 +156,38 @@
           // set first start point
           let startPoint = line.vertices[0];
           let startVectorKey = startPoint.x + "," + startPoint.y;
-          // check existance of all points of the (poly)line
-          let polylineValid = true;
-          for (let i = 1; i < line.vertices.length; i++) {
-            // find end point
-            let endPoint = line.vertices[i];
-            let endVectorKey = endPoint.x + "," + endPoint.y;
-            // check existance of point in vectorToPointMap
-            if (
-              !vectorToPointMap[startVectorKey] ||
-              !vectorToPointMap[endVectorKey]
-            ) {
-              polylineValid = false;
-              break;
-            }
-          }
-          // go to next polyline if this one has coordinates without corresponding point
-          if (!polylineValid) {
-            continue;
-          }
           // add segments from (poly)line
           for (let i = 1; i < line.vertices.length; i++) {
             // find end point
             let endPoint = line.vertices[i];
             let endVectorKey = endPoint.x + "," + endPoint.y;
-            // add new segment to ggbSegments
+            // segment handle
             let ggbSegmentKey = key + "L" + i.toString(10);
+            // create points if they don't exist
+            if (!vectorToPointMap[startVectorKey]) {
+              createPoint(
+                usedLayerEntryTypes,
+                vectorToPointMap,
+                startPoint,
+                ggbSegmentKey + "S"
+              );
+            }
+            if (!vectorToPointMap[endVectorKey]) {
+              createPoint(
+                usedLayerEntryTypes,
+                vectorToPointMap,
+                endPoint,
+                ggbSegmentKey + "G"
+              );
+            }
+            // add new segment to ggbSegments
             ggbSegments[ggbSegmentKey] = {};
             ggbSegments[ggbSegmentKey].startPoint =
               vectorToPointMap[startVectorKey];
             ggbSegments[ggbSegmentKey].endPoint =
               vectorToPointMap[endVectorKey];
             // set end point as start point for next line segment
-            let startPoint = endPoint;
+            startPoint = endPoint;
           }
         }
 
@@ -242,6 +243,35 @@
 
       function parseHandle(handle) {
         return parseInt(handle, 16).toString(10);
+      }
+
+      function createPoint(
+        usedLayerEntryTypes,
+        vectorToPointMap,
+        newPoint,
+        segmentPointHandle
+      ) {
+        let type = "INSERT";
+        let layer = "linienpunkt_sonstiger";
+        let subtype = "UNBEKANNT";
+
+        let layerEntryType = type + " " + layer + " " + subtype;
+        if (!usedLayerEntryTypes[layerEntryType]) {
+          usedLayerEntryTypes[layerEntryType] = {};
+          usedLayerEntryTypes[layerEntryType].type = type;
+          usedLayerEntryTypes[layerEntryType].subtype = subtype;
+          usedLayerEntryTypes[layerEntryType].layer = layer;
+          usedLayerEntryTypes[layerEntryType].color = "#dbdbdb";
+        }
+
+        const key = "P" + segmentPointHandle;
+        points[key] = {};
+        points[key].layer = layer;
+        points[key].x = newPoint.x;
+        points[key].y = newPoint.y;
+        points[key].type = subtype;
+        let vectorKey = newPoint.x + "," + newPoint.y;
+        vectorToPointMap[vectorKey] = key;
       }
     </script>
   </body>
