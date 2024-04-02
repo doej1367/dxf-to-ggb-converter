@@ -207,6 +207,7 @@
             }
             // add new segment to ggbSegments
             ggbSegments[ggbSegmentKey] = {};
+            ggbSegments[ggbSegmentKey].entryType = line.entryType;
             ggbSegments[ggbSegmentKey].layer = line.layer;
             ggbSegments[ggbSegmentKey].startPoint =
               dxfVectorToGgbPointMap[startVectorKey];
