@@ -90,7 +90,13 @@
         }
         let entities = dxf.entities;
         for (const entity of entities) {
-          usedLayers.add(entity.layer + (entity.name ? " " + entity.name : ""));
+          usedLayers.add(
+            entity.type +
+              " " +
+              entity.layer +
+              (entity.name ? " " + entity.name : "")
+          );
+
           let key;
           switch (entity.type) {
             case "INSERT":
@@ -126,7 +132,8 @@
         }
         // TODO find and add node handles for lines and polylines
 
-        // TODO show used layers and an option to deselect unwanted ones
+        // TODO show used layers and
+        // TODO add an option to select wanted ones
         // 1. add an html element for each and provide an option to remove each one
         // 2. provide an option to asign point types
         // 3. collect the remaining ones afterwards
