@@ -209,14 +209,15 @@
           }
         }
 
-        // TODO show used layers and
+        // show used layers and
         // TODO add an option to select wanted ones
         // 1. add an html element for each and provide an option to remove each one
         // 2. provide an option to asign point/line/text types
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
+        //    What about line-point dependencies?
         // 3. collect the remaining ones afterwards
 
-        // TODO sort usedLayerEntryTypes by key
+        // sort usedLayerEntryTypes by key
         usedLayerEntryTypes = new Map(
           [...usedLayerEntryTypes.entries()].sort()
         );
