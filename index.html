@@ -35,7 +35,7 @@
       let fileName = "test";
 
       // final data - important for the export
-      let usedLayerEntryTypes = {};
+      let usedLayerEntryTypes = new Map();
       let points = {};
       let ggbSegments = {};
       let texts = {};
@@ -73,7 +73,7 @@
 
       function extractXmlFromDxf(dxf) {
         // reset if file is changed
-        usedLayerEntryTypes = {};
+        usedLayerEntryTypes = new Map();
         points = {};
         ggbSegments = {};
         texts = {};
@@ -118,17 +118,18 @@
             " " +
             entity.layer +
             (entity.name ? " " + entity.name : "");
-          if (!usedLayerEntryTypes[layerEntryType]) {
-            usedLayerEntryTypes[layerEntryType] = {};
-            usedLayerEntryTypes[layerEntryType].type = entity.type;
-            usedLayerEntryTypes[layerEntryType].subtype = entity.name;
-            usedLayerEntryTypes[layerEntryType].layer = entity.layer;
-            usedLayerEntryTypes[layerEntryType].color =
+          if (!usedLayerEntryTypes.has(layerEntryType)) {
+            let value = {};
+            value.type = entity.type;
+            value.subtype = entity.name;
+            value.layer = entity.layer;
+            value.color =
               "#" +
               layers[entity.layer].color
                 .toString(16)
                 .toLowerCase()
                 .padStart(6, 0);
+            usedLayerEntryTypes.set(layerEntryType, value);
           }
 
           let key;
@@ -215,18 +216,15 @@
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
         // 3. collect the remaining ones afterwards
 
-        // sort usedLayerEntryTypes
-        //usedLayerEntryTypes = new Map(
-        //  Array.from(usedLayerEntryTypes).sort((a, b) =>
-        //    String(a[0]).localeCompare(b[0])
-        //  )
-        //);
+        // TODO sort usedLayerEntryTypes by key
+        usedLayerEntryTypes = new Map(
+          [...usedLayerEntryTypes.entries()].sort()
+        );
 
         // show usedLayerEntryTypes
         let layerTable = document.getElementById("layerList");
         layerTable.textContent = "";
-        for (const key in usedLayerEntryTypes) {
-          const entryType = usedLayerEntryTypes[key];
+        for (const [key, entryType] of usedLayerEntryTypes) {
           // create layer item
           let tableRow = layerTable.insertRow(-1);
           tableRow.id = key;
@@ -279,8 +277,6 @@
 
         // for Debug
         let dxfToJson =
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(usedLayerEntryTypes, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(points, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
@@ -335,12 +331,13 @@
         let subtype = "UNBEKANNT";
 
         let layerEntryType = type + " " + layer + " " + subtype;
-        if (!usedLayerEntryTypes[layerEntryType]) {
-          usedLayerEntryTypes[layerEntryType] = {};
-          usedLayerEntryTypes[layerEntryType].type = type;
-          usedLayerEntryTypes[layerEntryType].subtype = subtype;
-          usedLayerEntryTypes[layerEntryType].layer = layer;
-          usedLayerEntryTypes[layerEntryType].color = "#dbdbdb";
+        if (!usedLayerEntryTypes.has(layerEntryType)) {
+          let value = {};
+          value.type = type;
+          value.subtype = subtype;
+          value.layer = layer;
+          value.color = "#dbdbdb";
+          usedLayerEntryTypes.set(layerEntryType, value);
         }
 
         const key = "P" + segmentPointHandle;
