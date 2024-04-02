@@ -25,6 +25,9 @@
       "use strict";
 
       let fileName = "test";
+
+      // final data - important for the export
+      let usedLayerEntryTypes = {};
       let points = {};
       let ggbSegments = {};
       let texts = {};
@@ -79,10 +82,10 @@
 
         // remember layers for the layer colors later on
         const layers = dxf.tables.layer.layers;
-        let usedLayerEntryTypes = {};
 
-        let vectorToPointMap = {};
-        let lines = {};
+        // temporary variables for conversion
+        let dxfVectorToGgbPointMap = {};
+        let dxfPolyLines = {};
 
         // find additional info in dxf.blocks
         let additionalInfos = {};
@@ -129,14 +132,14 @@
                 points[key].comment = info.comment;
               }
               let vectorKey = entity.position.x + "," + entity.position.y;
-              vectorToPointMap[vectorKey] = key;
+              dxfVectorToGgbPointMap[vectorKey] = key;
               break;
             case "LINE":
             case "LWPOLYLINE":
               key = "L" + parseHandle(entity.handle);
-              lines[key] = {};
-              lines[key].layer = entity.layer;
-              lines[key].vertices = entity.vertices;
+              dxfPolyLines[key] = {};
+              dxfPolyLines[key].layer = entity.layer;
+              dxfPolyLines[key].vertices = entity.vertices;
               break;
             case "TEXT":
               key = "T" + parseHandle(entity.handle);
@@ -151,8 +154,8 @@
           }
         }
         // find and add node handles for lines and polylines
-        for (const key in lines) {
-          let line = lines[key];
+        for (const key in dxfPolyLines) {
+          let line = dxfPolyLines[key];
           // set first start point
           let startPoint = line.vertices[0];
           let startVectorKey = startPoint.x + "," + startPoint.y;
@@ -164,18 +167,18 @@
             // segment handle
             let ggbSegmentKey = key + "L" + i.toString(10);
             // create points if they don't exist
-            if (!vectorToPointMap[startVectorKey]) {
+            if (!dxfVectorToGgbPointMap[startVectorKey]) {
               createPoint(
                 usedLayerEntryTypes,
-                vectorToPointMap,
+                dxfVectorToGgbPointMap,
                 startPoint,
                 ggbSegmentKey + "S"
               );
             }
-            if (!vectorToPointMap[endVectorKey]) {
+            if (!dxfVectorToGgbPointMap[endVectorKey]) {
               createPoint(
                 usedLayerEntryTypes,
-                vectorToPointMap,
+                dxfVectorToGgbPointMap,
                 endPoint,
                 ggbSegmentKey + "G"
               );
@@ -183,9 +186,9 @@
             // add new segment to ggbSegments
             ggbSegments[ggbSegmentKey] = {};
             ggbSegments[ggbSegmentKey].startPoint =
-              vectorToPointMap[startVectorKey];
+              dxfVectorToGgbPointMap[startVectorKey];
             ggbSegments[ggbSegmentKey].endPoint =
-              vectorToPointMap[endVectorKey];
+              dxfVectorToGgbPointMap[endVectorKey];
             // set end point as start point for next line segment
             startPoint = endPoint;
           }
