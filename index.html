@@ -234,7 +234,7 @@
           let cell0 = tableRow.insertCell(0);
           let selectedSelectorId = key + "_selected";
           let selectCheckbox = document.createElement("input");
-          selectCheckbox.class = "selected";
+          selectCheckbox.className = "selected";
           selectCheckbox.type = "checkbox";
           selectCheckbox.id = selectedSelectorId;
           cell0.appendChild(selectCheckbox);
@@ -257,7 +257,7 @@
           let cell2 = tableRow.insertCell(2);
           let colorSelectorId = key + "_color";
           let colorSelector = document.createElement("input");
-          selectCheckbox.class = "color";
+          colorSelector.className = "color";
           colorSelector.type = "color";
           colorSelector.value = entryType.color;
           colorSelector.id = colorSelectorId;
@@ -266,8 +266,9 @@
           let cell3 = tableRow.insertCell(3);
           let sizeSelectorId = key + "_size";
           let sizeSelector = document.createElement("input");
-          selectCheckbox.class = "size";
+          sizeSelector.className = "size";
           sizeSelector.type = "number";
+          sizeSelector.value = entryType.type == "INSERT" ? 3 : 2;
           sizeSelector.size = 4;
           sizeSelector.min = 1;
           sizeSelector.max = entryType.type == "INSERT" ? 9 : 13;
@@ -369,6 +370,7 @@
       function createLineStyleSelector(styleSelectorId) {
         let dotStyles = { 0: "-----", 15: "- - -" };
         let styleSelector = document.createElement("select");
+        styleSelector.className = "style";
         styleSelector.id = styleSelectorId;
         for (const i in dotStyles) {
           const style = dotStyles[i];
