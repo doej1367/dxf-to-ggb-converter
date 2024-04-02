@@ -22,6 +22,8 @@
     <pre id="output"></pre>
 
     <script>
+      "use strict";
+
       let fileName = "test";
 
       // add listener for file input
@@ -46,18 +48,72 @@
           extractXmlFromDxf(dxf);
         } catch (err) {
           document.getElementById("output").textContent =
-            "ERROR: Something is wrong with the provided dxf file!\n" +
+            "ERROR: Something might be wrong with the provided dxf file!\n\n" +
+            err.name +
+            ", " +
+            err.message +
+            ": \n" +
             err.stack;
           console.error(err.stack);
         }
       }
 
       function extractXmlFromDxf(dxf) {
-        // for Debug
-        let dxfToJson = JSON.stringify(dxf, null, 2);
-        document.getElementById("output").textContent = dxfToJson;
+        let points = {};
+        let lines = {};
+        let texts = {};
 
-        // TODO
+        let additionalInfos = {};
+        const blocks = dxf.blocks;
+        for (const key in blocks) {
+          let block = blocks[key];
+          console.log(block);
+          additionalInfos[block.name] = {};
+          additionalInfos[block.name].layer = block.layer;
+          additionalInfos[block.name].comment = block.name2;
+        }
+        let entities = dxf.entities;
+        for (const entity of entities) {
+          switch (entity.type) {
+            case "INSERT":
+              points[entity.handle] = {};
+              points[entity.handle].layer = entity.layer;
+              points[entity.handle].x = entity.position.x;
+              points[entity.handle].y = entity.position.y;
+              const info = additionalInfos[entity.name];
+              if (info.layer == entity.layer) {
+                points[entity.handle].comment = info.comment;
+              }
+              break;
+            case "LINE":
+              lines[entity.handle] = {};
+              lines[entity.handle].layer = entity.layer;
+              lines[entity.handle].x1 = entity.vertices[0].x;
+              lines[entity.handle].y1 = entity.vertices[0].y;
+              lines[entity.handle].x2 = entity.vertices[1].x;
+              lines[entity.handle].y2 = entity.vertices[1].y;
+              break;
+            case "TEXT":
+              texts[entity.handle] = {};
+              texts[entity.handle].layer = entity.layer;
+              texts[entity.handle].x = entity.startPoint.x;
+              texts[entity.handle].y = entity.startPoint.y;
+              texts[entity.handle].text = entity.text;
+              break;
+            default:
+              break;
+          }
+        }
+        // TODO find and add start and end node handles for lines
+
+        // for Debug
+        let dxfToJson =
+          JSON.stringify(points, null, 2) +
+          "\n\n" +
+          JSON.stringify(lines, null, 2) +
+          "\n\n" +
+          JSON.stringify(texts, null, 2);
+        document.getElementById("output").textContent = dxfToJson;
 
         let ggbContent = "TODO add elements and commands\n";
         // saveToGGB(ggbContent); // TODO uncomment later!
