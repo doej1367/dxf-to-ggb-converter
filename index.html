@@ -54,11 +54,11 @@
             err.message +
             ": \n" +
             err.stack;
-          console.error(err.stack);
         }
       }
 
       function extractXmlFromDxf(dxf) {
+        // COMMENT mark exists?  1xxx = yes, 9xxx = no
         let pointTypesMap = {
           1000: "allgemeine Marke",
           1200: "Rohr",
@@ -82,7 +82,6 @@
         const blocks = dxf.blocks;
         for (const key in blocks) {
           let block = blocks[key];
-          console.log(block);
           additionalInfos[block.name] = {};
           additionalInfos[block.name].layer = block.layer;
           additionalInfos[block.name].comment = block.name2;
@@ -125,6 +124,8 @@
         // TODO find and add node handles for lines and polylines
 
         // TODO show used layers and an option to deselect unwanted ones
+        // 1. add an html element for each and provide an option to remove each one
+        // 2. collect the remaining ones afterwards
 
         // TODO create the xml ggbContent from the maps above
 
