@@ -12,36 +12,59 @@
       src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"
       type="text/javascript"
     ></script>
+    <script
+      src="https://unpkg.com/dxf-parser@1.1.2/dist/dxf-parser.js"
+      type="text/javascript"
+    ></script>
 
     <input id="inputfile" type="file" name="inputfile" />
     <br />
     <pre id="output"></pre>
 
     <script>
+      let fileName = "test";
+
       // add listener for file input
       let fileInputElement = document.getElementById("inputfile");
       fileInputElement.addEventListener("change", function () {
         let inputReader = new FileReader();
         let file = this.files[0];
-        let fileName = file.name;
+        fileName = file.name;
         inputReader.onload = function () {
-          processFile(inputReader, fileName);
+          processFile(inputReader);
         };
         inputReader.readAsText(file);
       });
 
       // process file
-      function processFile(inputReader, fileName) {
+      function processFile(inputReader) {
+        // parse dxf file
         let dxfContent = inputReader.result;
+        const parser = new DxfParser();
+        try {
+          let dxf = parser.parseSync(dxfContent);
+          extractXmlFromDxf(dxf);
+        } catch (err) {
+          document.getElementById("output").textContent =
+            "ERROR: Something is wrong with the provided dxf file!\n" +
+            err.stack;
+          console.error(err.stack);
+        }
+      }
+
+      function extractXmlFromDxf(dxf) {
+        // for Debug
+        let dxfToJson = JSON.stringify(dxf, null, 2);
+        document.getElementById("output").textContent = dxfToJson;
 
         // TODO
 
         let ggbContent = "TODO add elements and commands\n";
-        saveToGGB(ggbContent, fileName);
+        // saveToGGB(ggbContent); // TODO uncomment later!
       }
 
       // output file to the download folder
-      function saveToGGB(ggbContent, fileName) {
+      function saveToGGB(ggbContent) {
         // start zip creation
         let zip = new JSZip();
         // create an empty geogebra.xml file
