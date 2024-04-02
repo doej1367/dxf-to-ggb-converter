@@ -80,18 +80,18 @@
 
         // COMMENT mark exists?  1xxx = yes, 9xxx = no
         let pointTypesMap = {
-          1000: "allgemeine Marke",
+          1000: "allgemeineMarke",
           1200: "Rohr",
-          1120: "Unbehauener Feldstein",
+          1120: "unbehauenerFeldstein",
           1110: "Grenzstein",
           1650: "Klebemarke",
           1500: "Pfahl",
           1655: "Schlagmarke",
-          1400: "Meißelzeichen",
+          1400: "Meisselzeichen",
           1300: "Nagel",
-          9500: "ohne Marke",
-          9998: "Nach Quellangaben nicht zu spezifizieren",
-          9600: "Abmarkung zeitweilig ausgesetzt",
+          9500: "ohneMarke",
+          9998: "NachQuellangabenNichtZuSpezifizieren",
+          9600: "AbmarkungZeitweiligAusgesetzt",
         };
 
         // remember layers for the layer colors later on
@@ -121,7 +121,10 @@
           if (!usedLayerEntryTypes.has(layerEntryType)) {
             let value = {};
             value.type = entity.type;
-            value.subtype = entity.name;
+            value.subtypeId = entity.name;
+            value.subtypeName =
+              pointTypesMap[entity?.name?.replace("ABM_", "")] ??
+              value.subtypeId;
             value.layer = entity.layer;
             value.color =
               "#" +
@@ -140,7 +143,7 @@
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
-              points[key].subtype =
+              points[key].subtypeId =
                 pointTypesMap[entity.name.replace("ABM_", "")];
               const info = additionalInfos[entity.name];
               if (info.layer == entity.layer) {
@@ -236,12 +239,17 @@
           let selectCheckbox = document.createElement("input");
           selectCheckbox.className = "selected";
           selectCheckbox.type = "checkbox";
+          selectCheckbox.checked = true;
           selectCheckbox.id = selectedSelectorId;
           cell0.appendChild(selectCheckbox);
           // selected - label
           let labelId = key + "_label";
           let label = document.createElement("label");
-          label.textContent = key;
+          label.textContent =
+            entryType.type +
+            " " +
+            entryType.layer +
+            (entryType.subtypeName ? " " + entryType.subtypeName : "");
           label.htmlFor = selectedSelectorId;
           label.id = labelId;
           cell0.appendChild(label);
@@ -290,13 +298,13 @@
       ) {
         let type = "INSERT";
         let layer = "linienpunkt_sonstiger";
-        let subtype = "UNBEKANNT";
+        let subtypeId = "UNBEKANNT";
 
-        let layerEntryType = type + " " + layer + " " + subtype;
+        let layerEntryType = type + " " + layer + " " + subtypeId;
         if (!usedLayerEntryTypes.has(layerEntryType)) {
           let value = {};
           value.type = type;
-          value.subtype = subtype;
+          value.subtypeId = subtypeId;
           value.layer = layer;
           value.color = "#dbdbdb";
           usedLayerEntryTypes.set(layerEntryType, value);
@@ -307,7 +315,7 @@
         points[key].layer = layer;
         points[key].x = newPoint.x;
         points[key].y = newPoint.y;
-        points[key].type = subtype;
+        points[key].type = subtypeId;
         let vectorKey = newPoint.x + "," + newPoint.y;
         vectorToPointMap[vectorKey] = key;
       }
