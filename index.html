@@ -22,7 +22,7 @@
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <table id="layerList"></table>
     <h3>3. Export the data as a GGB file for Geogebra</h3>
-    <button id="submit">Export to GGB</button>
+    <button id="submit" onclick="exportGbbFile()">Export to GGB</button>
     <br />
     <br />
     <hr />
@@ -276,46 +276,6 @@
         }
 
         // TODO add an option to move all points by two values towards the origin (0, 0)
-
-        // for Debug
-        let dxfToJson =
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(points, null, 2) +
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(ggbSegments, null, 2) +
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(texts, null, 2);
-        document.getElementById("output").textContent = dxfToJson;
-
-        // TODO !!! make the following on some button click !!!
-
-        // TODO remove duplicate lines
-
-        // TODO create the xml ggbContent from the maps above
-
-        let ggbContent = "TODO add elements and commands\n";
-        // saveToGGB(ggbContent); // TODO uncomment later! (also make this on some button click)
-      }
-
-      // output file to the download folder
-      function saveToGGB(ggbContent) {
-        // start zip creation
-        let zip = new JSZip();
-        // create an empty geogebra.xml file
-        // and add the elements and commands from the ggbContent
-        let xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
-        let ggbHeader =
-          '<geogebra format="5.0" >\n' +
-          '<construction title="" author="" date="">\n';
-        let ggbFooter = "</construction>\n" + "</geogebra>\n";
-        zip.file(
-          "geogebra.xml",
-          xmlHeader + ggbHeader + ggbContent + ggbFooter
-        );
-        // save as ziped ggb file
-        zip.generateAsync({ type: "blob" }).then(function (content) {
-          saveAs(content, fileName + ".ggb");
-        });
       }
 
       function parseHandle(handle) {
@@ -355,6 +315,7 @@
       function createPointStyleSelector(styleSelectorId) {
         let dotStyles = ["⏺", "x", "⭘", "+", "◆", "◇", "⮝", "⮟", "⮞", "⮜"];
         let styleSelector = document.createElement("select");
+        styleSelector.className = "style";
         styleSelector.id = styleSelectorId;
         for (const i in dotStyles) {
           const style = dotStyles[i];
@@ -379,6 +340,64 @@
           styleSelector.appendChild(option);
         }
         return styleSelector;
+      }
+
+      function exportGbbFile() {
+        // TODO remove duplicate lines
+
+        // read layer costumisations from ui
+        let layerStyles = {};
+        let layerList = document.getElementById("layerList");
+        let layerListElements = layerList.children[0].children;
+        for (const element of layerListElements) {
+          let value = {};
+          value.selected =
+            element.getElementsByClassName("selected")[0].checked;
+          value.style = element.getElementsByClassName("style")[0].value;
+          value.color = element.getElementsByClassName("color")[0].value;
+          value.size = element.getElementsByClassName("size")[0].value;
+          layerStyles[element.id] = value;
+        }
+
+        // prepare xml data for final file
+        let ggbContent;
+
+        // TODO create the xml ggbContent from the maps and objects above
+
+        // saveToGGB(ggbContent);
+
+        // for Debug
+        let dxfToJson =
+          "\n\n-------------------------------------------------------\n\n" +
+          JSON.stringify(layerStyles, null, 2) +
+          "\n\n-------------------------------------------------------\n\n" +
+          JSON.stringify(points, null, 2) +
+          "\n\n-------------------------------------------------------\n\n" +
+          JSON.stringify(ggbSegments, null, 2) +
+          "\n\n-------------------------------------------------------\n\n" +
+          JSON.stringify(texts, null, 2);
+        document.getElementById("output").textContent = dxfToJson;
+      }
+
+      // output file to the download folder
+      function saveToGGB(ggbContent) {
+        // start zip creation
+        let zip = new JSZip();
+        // create an empty geogebra.xml file
+        // and add the elements and commands from the ggbContent
+        let xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
+        let ggbHeader =
+          '<geogebra format="5.0" >\n' +
+          '<construction title="" author="" date="">\n';
+        let ggbFooter = "</construction>\n" + "</geogebra>\n";
+        zip.file(
+          "geogebra.xml",
+          xmlHeader + ggbHeader + ggbContent + ggbFooter
+        );
+        // save as ziped ggb file
+        zip.generateAsync({ type: "blob" }).then(function (content) {
+          saveAs(content, fileName + ".ggb");
+        });
       }
     </script>
   </body>
