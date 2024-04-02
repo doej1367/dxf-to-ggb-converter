@@ -249,6 +249,7 @@
           let sizeSelectorId = "size";
           let sizeSelector = document.createElement("input");
           sizeSelector.type = "number";
+          sizeSelector.size = 4;
           sizeSelector.min = 1;
           sizeSelector.max = entryType.type == "INSERT" ? 9 : 13;
           listItem.appendChild(sizeSelector);
