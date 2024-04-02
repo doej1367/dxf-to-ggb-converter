@@ -59,6 +59,21 @@
       }
 
       function extractXmlFromDxf(dxf) {
+        let pointTypesMap = {
+          1000: "allgemeine Marke",
+          1200: "Rohr",
+          1120: "Unbehauener Feldstein",
+          1110: "Grenzstein",
+          1650: "Klebemarke",
+          1500: "Pfahl",
+          1655: "Schlagmarke",
+          1400: "Meißelzeichen",
+          1300: "Nagel",
+          9500: "ohne Marke",
+          9998: "Nach Quellangaben nicht zu spezifizieren",
+          9600: "Abmarkung zeitweilig ausgesetzt",
+        };
+
         let points = {};
         let lines = {};
         let texts = {};
@@ -82,7 +97,7 @@
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
-              points[key].type = entity.name;
+              points[key].type = pointTypesMap[entity.name.replace("ABM_", "")];
               const info = additionalInfos[entity.name];
               if (info.layer == entity.layer) {
                 points[key].comment = info.comment;
