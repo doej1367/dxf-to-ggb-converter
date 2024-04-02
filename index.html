@@ -143,6 +143,7 @@
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
+              points[key].subtypeId = entity.name;
               points[key].subtypeName = subtypeName;
               const info = additionalInfos[entity.name];
               if (info.layer == entity.layer) {
@@ -298,12 +299,14 @@
         let type = "INSERT";
         let layer = "linienpunkt_sonstiger";
         let subtypeId = "UNBEKANNT";
+        let subtypeName = "Unbekannt";
 
         let layerEntryType = type + " " + layer + " " + subtypeId;
         if (!usedLayerEntryTypes.has(layerEntryType)) {
           let value = {};
           value.type = type;
           value.subtypeId = subtypeId;
+          value.subtypeName = subtypeName;
           value.layer = layer;
           value.color = "#dbdbdb";
           usedLayerEntryTypes.set(layerEntryType, value);
@@ -314,7 +317,8 @@
         points[key].layer = layer;
         points[key].x = newPoint.x;
         points[key].y = newPoint.y;
-        points[key].type = subtypeId;
+        points[key].subtypeId = subtypeId;
+        points[key].subtypeName = subtypeName;
         let vectorKey = newPoint.x + "," + newPoint.y;
         vectorToPointMap[vectorKey] = key;
       }
