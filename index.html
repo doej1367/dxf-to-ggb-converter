@@ -118,13 +118,13 @@
             " " +
             entity.layer +
             (entity.name ? " " + entity.name : "");
+          let subtypeName =
+            pointTypesMap[entity?.name?.replace("ABM_", "")] ?? entity.name;
           if (!usedLayerEntryTypes.has(layerEntryType)) {
             let value = {};
             value.type = entity.type;
             value.subtypeId = entity.name;
-            value.subtypeName =
-              pointTypesMap[entity?.name?.replace("ABM_", "")] ??
-              value.subtypeId;
+            value.subtypeName = subtypeName;
             value.layer = entity.layer;
             value.color =
               "#" +
@@ -143,8 +143,7 @@
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
-              points[key].subtypeId =
-                pointTypesMap[entity.name.replace("ABM_", "")];
+              points[key].subtypeName = subtypeName;
               const info = additionalInfos[entity.name];
               if (info.layer == entity.layer) {
                 points[key].comment = info.comment;
