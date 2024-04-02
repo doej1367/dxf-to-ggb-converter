@@ -35,15 +35,27 @@
         let dxfContent = inputReader.result;
 
         // TODO
-        let xmlContent = "Hello World\n";
 
-        saveToGGB(xmlContent, fileName);
+        let ggbContent = "TODO add elements and commands\n";
+        saveToGGB(ggbContent, fileName);
       }
 
       // output file to the download folder
-      function saveToGGB(xmlContent, fileName) {
+      function saveToGGB(ggbContent, fileName) {
+        // start zip creation
         let zip = new JSZip();
-        zip.file("geogebra.xml", xmlContent);
+        // create an empty geogebra.xml file
+        // and add the elements and commands from the ggbContent
+        let xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
+        let ggbHeader =
+          '<geogebra format="5.0" >\n' +
+          '<construction title="" author="" date="">\n';
+        let ggbFooter = "</construction>\n" + "</geogebra>\n";
+        zip.file(
+          "geogebra.xml",
+          xmlHeader + ggbHeader + ggbContent + ggbFooter
+        );
+        // save as ziped ggb file
         zip.generateAsync({ type: "blob" }).then(function (content) {
           saveAs(content, fileName + ".ggb");
         });
