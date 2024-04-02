@@ -74,12 +74,17 @@
           9600: "Abmarkung zeitweilig ausgesetzt",
         };
 
-        let usedLayers = new Set();
+        // remember layers for the layer colors later on
+        const layers = dxf.tables.layer.layers;
+        let usedLayerEntryTypes = {};
 
         let points = {};
+        let vectorToPointMap = {};
         let lines = {};
+        let ggbSegments = {};
         let texts = {};
 
+        // find additional info in dxf.blocks
         let additionalInfos = {};
         const blocks = dxf.blocks;
         for (const key in blocks) {
@@ -88,19 +93,30 @@
           additionalInfos[block.name].layer = block.layer;
           additionalInfos[block.name].comment = block.name2;
         }
+        // find main info about e.g. coordinates in dxf.entities
         let entities = dxf.entities;
         for (const entity of entities) {
-          usedLayers.add(
+          let layerEntryType =
             entity.type +
-              " " +
-              entity.layer +
-              (entity.name ? " " + entity.name : "")
-          );
+            " " +
+            entity.layer +
+            (entity.name ? " " + entity.name : "");
+          usedLayerEntryTypes[layerEntryType] = {};
+          usedLayerEntryTypes[layerEntryType].type = entity.type;
+          usedLayerEntryTypes[layerEntryType].subtype = entity.name;
+          usedLayerEntryTypes[layerEntryType].layer = entity.layer;
+          usedLayerEntryTypes[layerEntryType].color =
+            "#" +
+            layers[entity.layer].color
+              .toString(16)
+              .toLowerCase()
+              .padStart(6, 0);
 
           let key;
+          let vectorKey;
           switch (entity.type) {
             case "INSERT":
-              key = "P" + entity.handle;
+              key = "P" + parseHandle(entity.handle);
               points[key] = {};
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
@@ -110,16 +126,18 @@
               if (info.layer == entity.layer) {
                 points[key].comment = info.comment;
               }
+              vectorKey = entity.position.x + "," + entity.position.y;
+              vectorToPointMap[vectorKey] = key;
               break;
             case "LINE":
             case "LWPOLYLINE":
-              key = "L" + entity.handle;
+              key = "L" + parseHandle(entity.handle);
               lines[key] = {};
               lines[key].layer = entity.layer;
               lines[key].vertices = entity.vertices;
               break;
             case "TEXT":
-              key = "T" + entity.handle;
+              key = "T" + parseHandle(entity.handle);
               texts[key] = {};
               texts[key].layer = entity.layer;
               texts[key].x = entity.startPoint.x;
@@ -130,7 +148,47 @@
               break;
           }
         }
-        // TODO find and add node handles for lines and polylines
+        // find and add node handles for lines and polylines
+        for (const key in lines) {
+          let line = lines[key];
+          // set first start point
+          let startPoint = line.vertices[0];
+          let startVectorKey = startPoint.x + "," + startPoint.y;
+          // check existance of all points of the (poly)line
+          let polylineValid = true;
+          for (let i = 1; i < line.vertices.length; i++) {
+            // find end point
+            let endPoint = line.vertices[i];
+            let endVectorKey = endPoint.x + "," + endPoint.y;
+            // check existance of point in vectorToPointMap
+            if (
+              !vectorToPointMap[startVectorKey] ||
+              !vectorToPointMap[endVectorKey]
+            ) {
+              polylineValid = false;
+              break;
+            }
+          }
+          // go to next polyline if this one has coordinates without corresponding point
+          if (!polylineValid) {
+            continue;
+          }
+          // add segments from (poly)line
+          for (let i = 1; i < line.vertices.length; i++) {
+            // find end point
+            let endPoint = line.vertices[i];
+            let endVectorKey = endPoint.x + "," + endPoint.y;
+            // add new segment to ggbSegments
+            let ggbSegmentKey = key + "L" + i.toString(10);
+            ggbSegments[ggbSegmentKey] = {};
+            ggbSegments[ggbSegmentKey].startPoint =
+              vectorToPointMap[startVectorKey];
+            ggbSegments[ggbSegmentKey].endPoint =
+              vectorToPointMap[endVectorKey];
+            // set end point as start point for next line segment
+            let startPoint = endPoint;
+          }
+        }
 
         // TODO show used layers and
         // TODO add an option to select wanted ones
@@ -138,6 +196,7 @@
         // 2. provide an option to asign point/line/text types
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
         // 3. collect the remaining ones afterwards
+
         // TODO remove duplicate lines
 
         // TODO add an option to move all points by two values towards the origin (0, 0)
@@ -147,17 +206,17 @@
         // for Debug
         let dxfToJson =
           "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(Array.from(usedLayers).sort(), null, 2) +
+          JSON.stringify(usedLayerEntryTypes, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(points, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(lines, null, 2) +
+          JSON.stringify(ggbSegments, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(texts, null, 2);
         document.getElementById("output").textContent = dxfToJson;
 
         let ggbContent = "TODO add elements and commands\n";
-        // saveToGGB(ggbContent); // TODO uncomment later!
+        // saveToGGB(ggbContent); // TODO uncomment later! (also make this on some button click)
       }
 
       // output file to the download folder
@@ -179,6 +238,10 @@
         zip.generateAsync({ type: "blob" }).then(function (content) {
           saveAs(content, fileName + ".ggb");
         });
+      }
+
+      function parseHandle(handle) {
+        return parseInt(handle, 16).toString(10);
       }
     </script>
   </body>
