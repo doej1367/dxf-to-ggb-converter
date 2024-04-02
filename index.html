@@ -19,6 +19,8 @@
 
     <input id="inputfile" type="file" name="inputfile" />
     <br />
+    <div id="layerList"></div>
+    <br />
     <pre id="output"></pre>
 
     <script>
@@ -200,12 +202,48 @@
         // 2. provide an option to asign point/line/text types
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
         // 3. collect the remaining ones afterwards
-
-        // TODO remove duplicate lines
+        let layerList = document.getElementById("layerList");
+        for (const key in usedLayerEntryTypes) {
+          const entryType = usedLayerEntryTypes[key];
+          // create layer item
+          let listItem = document.createElement("div");
+          listItem.id = key;
+          // selected - are the items of this layer included in the export?
+          let selectedSelectorId = "selected";
+          let selectCheckbox = document.createElement("input");
+          selectCheckbox.type = "checkbox";
+          selectCheckbox.id = selectedSelectorId;
+          listItem.appendChild(selectCheckbox);
+          // label
+          let label = document.createElement("label");
+          label.textContent = key;
+          listItem.appendChild(label);
+          // point or line style for the items of this layer
+          let styleSelectorId = "style";
+          let styleSelector =
+            entryType.type == "INSERT" || entryType.type == "TEXT"
+              ? createPointStyleSelector(styleSelectorId)
+              : createLineStyleSelector(styleSelectorId);
+          listItem.appendChild(styleSelector);
+          // color for the items of this layer
+          let colorSelectorId = "color";
+          let colorSelector = document.createElement("input");
+          colorSelector.type = "color";
+          colorSelector.value = entryType.color;
+          colorSelector.id = colorSelectorId;
+          listItem.appendChild(colorSelector);
+          // size for the items of this layer
+          let sizeSelectorId = "size";
+          let sizeSelector = document.createElement("input");
+          sizeSelector.type = "number";
+          sizeSelector.min = 1;
+          sizeSelector.max = entryType.type == "INSERT" ? 9 : 13;
+          listItem.appendChild(sizeSelector);
+          // append layer item
+          layerList.appendChild(listItem);
+        }
 
         // TODO add an option to move all points by two values towards the origin (0, 0)
-
-        // TODO create the xml ggbContent from the maps above
 
         // for Debug
         let dxfToJson =
@@ -218,6 +256,12 @@
           "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(texts, null, 2);
         document.getElementById("output").textContent = dxfToJson;
+
+        // TODO !!! make the following on some button click !!!
+
+        // TODO remove duplicate lines
+
+        // TODO create the xml ggbContent from the maps above
 
         let ggbContent = "TODO add elements and commands\n";
         // saveToGGB(ggbContent); // TODO uncomment later! (also make this on some button click)
@@ -275,6 +319,34 @@
         points[key].type = subtype;
         let vectorKey = newPoint.x + "," + newPoint.y;
         vectorToPointMap[vectorKey] = key;
+      }
+
+      function createPointStyleSelector(styleSelectorId) {
+        let dotStyles = ["⏺", "x", "⭘", "+", "◆", "◇", "⮝", "⮟", "⮞", "⮜"];
+        let styleSelector = document.createElement("select");
+        styleSelector.id = styleSelectorId;
+        for (const i in dotStyles) {
+          const style = dotStyles[i];
+          var option = document.createElement("option");
+          option.value = i;
+          option.text = style;
+          styleSelector.appendChild(option);
+        }
+        return styleSelector;
+      }
+
+      function createLineStyleSelector(styleSelectorId) {
+        let dotStyles = { 0: "-----", 15: "- - -" };
+        let styleSelector = document.createElement("select");
+        styleSelector.id = styleSelectorId;
+        for (const i in dotStyles) {
+          const style = dotStyles[i];
+          var option = document.createElement("option");
+          option.value = i;
+          option.text = style;
+          styleSelector.appendChild(option);
+        }
+        return styleSelector;
       }
     </script>
   </body>
