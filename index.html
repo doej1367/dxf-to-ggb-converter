@@ -17,10 +17,16 @@
       type="text/javascript"
     ></script>
 
+    <h3>1. Select an ALKIS-DXF file</h3>
     <input id="inputfile" type="file" name="inputfile" />
-    <br />
+    <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <div id="layerList"></div>
+    <h3>3. Export the data as a GGB file for Geogebra</h3>
+    <button id="submit">Export to GGB</button>
     <br />
+    <br />
+    <hr />
+    <h3>Debug Output:</h3>
     <pre id="output"></pre>
 
     <script>
@@ -66,6 +72,12 @@
       }
 
       function extractXmlFromDxf(dxf) {
+        // reset if file is changed
+        usedLayerEntryTypes = {};
+        points = {};
+        ggbSegments = {};
+        texts = {};
+
         // COMMENT mark exists?  1xxx = yes, 9xxx = no
         let pointTypesMap = {
           1000: "allgemeine Marke",
@@ -203,6 +215,7 @@
         //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
         // 3. collect the remaining ones afterwards
         let layerList = document.getElementById("layerList");
+        layerList.textContent = "";
         for (const key in usedLayerEntryTypes) {
           const entryType = usedLayerEntryTypes[key];
           // create layer item
