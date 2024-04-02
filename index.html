@@ -137,9 +137,11 @@
 
           let key;
           switch (entity.type) {
+            // TODO delete unnecessary attributes
             case "INSERT":
               key = "P" + parseHandle(entity.handle);
               points[key] = {};
+              points[key].entryType = layerEntryType;
               points[key].layer = entity.layer;
               points[key].x = entity.position.x;
               points[key].y = entity.position.y;
@@ -156,12 +158,14 @@
             case "LWPOLYLINE":
               key = "L" + parseHandle(entity.handle);
               dxfPolyLines[key] = {};
+              dxfPolyLines[key].entryType = layerEntryType;
               dxfPolyLines[key].layer = entity.layer;
               dxfPolyLines[key].vertices = entity.vertices;
               break;
             case "TEXT":
               key = "T" + parseHandle(entity.handle);
               texts[key] = {};
+              texts[key].entryType = layerEntryType;
               texts[key].layer = entity.layer;
               texts[key].x = entity.startPoint.x;
               texts[key].y = entity.startPoint.y;
@@ -314,6 +318,7 @@
 
         const key = "P" + segmentPointHandle;
         points[key] = {};
+        points[key].entryType = layerEntryType;
         points[key].layer = layer;
         points[key].x = newPoint.x;
         points[key].y = newPoint.y;
