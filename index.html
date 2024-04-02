@@ -74,6 +74,8 @@
           9600: "Abmarkung zeitweilig ausgesetzt",
         };
 
+        let usedLayers = new Set();
+
         let points = {};
         let lines = {};
         let texts = {};
@@ -88,6 +90,7 @@
         }
         let entities = dxf.entities;
         for (const entity of entities) {
+          usedLayers.add(entity.layer + (entity.name ? " " + entity.name : ""));
           let key;
           switch (entity.type) {
             case "INSERT":
@@ -131,6 +134,9 @@
 
         // for Debug
         let dxfToJson =
+          "\n\n-------------------------------------------------------\n\n" +
+          JSON.stringify(Array.from(usedLayers).sort(), null, 2) +
+          "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(points, null, 2) +
           "\n\n-------------------------------------------------------\n\n" +
           JSON.stringify(lines, null, 2) +
