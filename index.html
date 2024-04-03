@@ -17,11 +17,13 @@
       type="text/javascript"
     ></script>
 
-    <h3>1. Select an ALKIS-DXF file</h3>
-    <input id="inputfile" type="file" name="inputfile" />
+    <h3>1. Select ALKIS-DXF files</h3>
+    <input id="inputfile" type="file" name="inputfile" multiple />
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <table id="layerList"></table>
-    <h3>3. Enter values to substract from every point (move map closer to origin)</h3>
+    <h3>
+      3. Enter values to substract from every point (move map closer to origin)
+    </h3>
     <input id="translationX" type="number" name="translationX" />
     <input id="translationY" type="number" name="translationY" />
     <h3>4. Export the data as a GGB file for Geogebra</h3>
@@ -35,10 +37,9 @@
     <script>
       "use strict";
 
-      let fileName = "test";
-
       // final data - important for the export
-      let header;
+      let fileName = "test";
+      let lowerLeftCorner = {};
       let usedLayerEntryTypes = new Map();
       let points = {};
       let ggbSegments = {};
@@ -47,26 +48,54 @@
       // add listener for file input
       let fileInputElement = document.getElementById("inputfile");
       fileInputElement.addEventListener("change", function () {
-        let inputReader = new FileReader();
-        let file = this.files[0];
-        fileName = file.name;
-        inputReader.onload = function () {
-          processFile(inputReader);
-        };
-        inputReader.readAsText(file);
+        // reset variables if file is changed
+        document.getElementById("output").textContent = "";
+        fileName = "";
+        lowerLeftCorner = {};
+        usedLayerEntryTypes = new Map();
+        points = {};
+        ggbSegments = {};
+        texts = {};
+        // load files
+        let fileReaders = [];
+        for (const file of this.files) {
+          fileReaders.push(
+            new Promise(function (resolve, reject) {
+              let inputReader = new FileReader();
+              inputReader.onload = function () {
+                resolve({
+                  fileName: file.name,
+                  fileContent: inputReader.result,
+                });
+              };
+              inputReader.onerror = function () {
+                reject(inputReader);
+              };
+              inputReader.readAsText(file);
+            })
+          );
+        }
+        // process files and
+        // display layers and translation suggestion
+        Promise.all(fileReaders).then((results) => {
+          for (const result of results) {
+            processFile(result.fileName, result.fileContent);
+          }
+          displayLayersAndTranslationSuggestion();
+        });
       });
 
       // process file
-      function processFile(inputReader) {
+      function processFile(dxfFileName, dxfContent) {
         // parse dxf file
-        let dxfContent = inputReader.result;
         const parser = new DxfParser();
         try {
           let dxf = parser.parseSync(dxfContent);
           extractXmlFromDxf(dxf);
+          fileName += dxfFileName.replace(".dxf", "");
         } catch (err) {
-          document.getElementById("output").textContent =
-            "ERROR: Something might be wrong with the provided dxf file!\n\n" +
+          document.getElementById("output").textContent +=
+            "\nERROR: Something might be wrong with the provided dxf file!\n\n" +
             err.name +
             ", " +
             err.message +
@@ -76,12 +105,6 @@
       }
 
       function extractXmlFromDxf(dxf) {
-        // reset if file is changed
-        usedLayerEntryTypes = new Map();
-        points = {};
-        ggbSegments = {};
-        texts = {};
-
         // COMMENT mark exists?  1xxx = yes, 9xxx = no
         let pointTypesMap = {
           1000: "allgemeineMarke",
@@ -99,7 +122,14 @@
         };
 
         // remember layers for the layer colors later on
-        header = dxf.header;
+        let header = dxf.header;
+        if (!lowerLeftCorner.x || header.$EXTMIN.x < lowerLeftCorner.x) {
+          lowerLeftCorner.x = header.$EXTMIN.x;
+        }
+        if (!lowerLeftCorner.y || header.$EXTMIN.y < lowerLeftCorner.y) {
+          lowerLeftCorner.y = header.$EXTMIN.y;
+        }
+
         const layers = dxf.tables.layer.layers;
 
         // temporary variables for conversion
@@ -223,7 +253,9 @@
             startVectorKey = endVectorKey;
           }
         }
+      }
 
+      function displayLayersAndTranslationSuggestion() {
         // show used layers and
         // add an option to select wanted ones
         // 1. add an html element for each and provide an option to remove each one
@@ -294,8 +326,7 @@
           cell3.appendChild(sizeSelector);
         }
 
-        // fill in suggested map translation values 
-        const lowerLeftCorner = header.$EXTMIN;
+        // fill in suggested map translation values
         let translation = {
           x: Math.floor(lowerLeftCorner.x),
           y: Math.floor(lowerLeftCorner.y),
@@ -413,7 +444,9 @@
             `  <labelMode val="0"/>\n` +
             `  <fixed val="true"/>\n` +
             `  <auxiliary val="true"/>\n` +
-            `  <coords x="${point.x - translation.x}" y="${point.y - translation.y}" z="1.0"/>\n` +
+            `  <coords x="${point.x - translation.x}" y="${
+              point.y - translation.y
+            }" z="1.0"/>\n` +
             `  <pointSize val="${style.size}"/>\n` +
             `  <pointStyle val="${style.style}"/>\n` +
             `  <caption val="${point.subtypeName} (${point.layer})"/>\n` +
@@ -435,7 +468,9 @@
             `  <labelMode val="3"/>\n` +
             `  <fixed val="true"/>\n` +
             `  <auxiliary val="true"/>\n` +
-            `  <coords x="${text.x - translation.x}" y="${text.y - translation.y}" z="1.0"/>\n` +
+            `  <coords x="${text.x - translation.x}" y="${
+              text.y - translation.y
+            }" z="1.0"/>\n` +
             `  <pointSize val="${style.size}"/>\n` +
             `  <pointStyle val="${style.style}"/>\n` +
             `  <caption val="${text.text}"/>\n` +
@@ -470,7 +505,7 @@
 
         saveToGGB(ggbContent);
 
-        document.getElementById("output").textContent = "Success!";
+        document.getElementById("output").textContent += "\nSuccess!";
       }
 
       // from https://stackoverflow.com/a/5624139/6307611
@@ -502,7 +537,7 @@
         );
         // save as ziped ggb file
         zip.generateAsync({ type: "blob" }).then(function (content) {
-          saveAs(content, fileName.replace(".dxf", "") + ".ggb");
+          saveAs(content, fileName + ".ggb");
         });
       }
     </script>
