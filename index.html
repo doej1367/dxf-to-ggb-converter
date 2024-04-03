@@ -411,10 +411,10 @@
           const color = hexToRgb(style.color);
           ggbContent +=
             `<element type="point" label="${key}">\n` +
-            `  <show object="true" label="false"/>\n` +
+            `  <show object="true" label="true"/>\n` +
             `  <objColor r="${color.r}" g="${color.g}" b="${color.b}" alpha="0.0"/>\n` +
             `  <layer val="0"/>\n` +
-            `  <labelMode val="4"/>\n` +
+            `  <labelMode val="3"/>\n` +
             `  <fixed val="true"/>\n` +
             `  <auxiliary val="true"/>\n` +
             `  <coords x="${text.x}" y="${text.y}" z="1.0"/>\n` +
