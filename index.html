@@ -337,7 +337,7 @@
         styleSelector.id = styleSelectorId;
         for (const i in dotStyles) {
           const style = dotStyles[i];
-          var option = document.createElement("option");
+          let option = document.createElement("option");
           option.value = i;
           option.text = style;
           styleSelector.appendChild(option);
@@ -352,7 +352,7 @@
         styleSelector.id = styleSelectorId;
         for (const i in dotStyles) {
           const style = dotStyles[i];
-          var option = document.createElement("option");
+          let option = document.createElement("option");
           option.value = i;
           option.text = style;
           styleSelector.appendChild(option);
@@ -457,7 +457,7 @@
 
       // from https://stackoverflow.com/a/5624139/6307611
       function hexToRgb(hex) {
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result
           ? {
               r: parseInt(result[1], 16),
