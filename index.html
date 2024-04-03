@@ -22,7 +22,7 @@
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <table id="layerList"></table>
     <h3>3. Export the data as a GGB file for Geogebra</h3>
-    <button id="submit" onclick="exportGbbFile()">Export to GGB</button>
+    <button id="submit" onclick="exportGgbFile()">Export to GGB</button>
     <br />
     <br />
     <hr />
@@ -244,7 +244,7 @@
           let selectCheckbox = document.createElement("input");
           selectCheckbox.className = "selected";
           selectCheckbox.type = "checkbox";
-          selectCheckbox.checked = true;
+          selectCheckbox.checked = false; // TODO set back to true
           selectCheckbox.id = selectedSelectorId;
           cell0.appendChild(selectCheckbox);
           // selected - label
@@ -359,7 +359,7 @@
         return styleSelector;
       }
 
-      function exportGbbFile() {
+      function exportGgbFile() {
         // TODO remove duplicate lines
 
         // read layer costumisations from ui
@@ -377,23 +377,90 @@
         }
 
         // prepare xml data for final file
-        let ggbContent;
+        let ggbContent = "";
 
-        // TODO create the xml ggbContent from the maps and objects above
+        for (const key in points) {
+          const point = points[key];
+          const style = layerStyles[point.entryType];
+          if (!style.selected) {
+            continue;
+          }
+          const color = hexToRgb(style.color);
+          ggbContent +=
+            `<element type="point" label="${key}">\n` +
+            `  <show object="true" label="false"/>\n` +
+            `  <objColor r="${color.r}" g="${color.g}" b="${color.b}" alpha="0.0"/>\n` +
+            `  <layer val="0"/>\n` +
+            `  <labelMode val="0"/>\n` +
+            `  <fixed val="true"/>\n` +
+            `  <coords x="${point.x}" y="${point.y}" z="1.0"/>\n` +
+            `  <pointSize val="${style.size}"/>\n` +
+            `  <pointStyle val="${style.style}"/>\n` +
+            `  <caption val="${point.subtypeName} (${point.layer})"/>\n` +
+            "</element>\n";
+        }
 
-        // saveToGGB(ggbContent);
+        for (const key in texts) {
+          const text = texts[key];
+          const style = layerStyles[text.entryType];
+          if (!style.selected) {
+            continue;
+          }
+          const color = hexToRgb(style.color);
+          ggbContent +=
+            `<element type="point" label="${key}">\n` +
+            `  <show object="true" label="false"/>\n` +
+            `  <objColor r="${color.r}" g="${color.g}" b="${color.b}" alpha="0.0"/>\n` +
+            `  <layer val="0"/>\n` +
+            `  <labelMode val="4"/>\n` +
+            `  <fixed val="true"/>\n` +
+            `  <coords x="${text.x}" y="${text.y}" z="1.0"/>\n` +
+            `  <pointSize val="${style.size}"/>\n` +
+            `  <pointStyle val="${style.style}"/>\n` +
+            `  <caption val="${text.text}"/>\n` +
+            "</element>\n";
+        }
 
-        // for Debug
-        let dxfToJson =
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(layerStyles, null, 2) +
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(points, null, 2) +
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(ggbSegments, null, 2) +
-          "\n\n-------------------------------------------------------\n\n" +
-          JSON.stringify(texts, null, 2);
-        document.getElementById("output").textContent = dxfToJson;
+        for (const key in ggbSegments) {
+          const segment = ggbSegments[key];
+          const style = layerStyles[segment.entryType];
+          if (!style.selected) {
+            continue;
+          }
+          const color = hexToRgb(style.color);
+          ggbContent +=
+            `<command name="Segment">\n` +
+            `  <input a0="${segment.startPoint}" a1="${segment.endPoint}"/>\n` +
+            `  <output a0="${key}"/>\n` +
+            `</command>\n` +
+            `<element type="segment" label="${key}">\n` +
+            `  <show object="true" label="false"/>\n` +
+            `  <objColor r="${color.r}" g="${color.g}" b="${color.b}" alpha="0.0"/>\n` +
+            `  <layer val="0"/>\n` +
+            `  <labelMode val="0"/>\n` +
+            `  <fixed val="true"/>\n` +
+            `  <coords x="0.0" y="1.0" z="-1.0"/>\n` +
+            `  <lineStyle thickness="1" type="${style.style}" typeHidden="1"/>\n` +
+            `  <outlyingIntersections val="false"/>\n` +
+            `  <keepTypeOnTransform val="true"/>\n` +
+            `</element>\n`;
+        }
+
+        saveToGGB(ggbContent);
+
+        document.getElementById("output").textContent = "Success!";
+      }
+
+      // from https://stackoverflow.com/a/5624139/6307611
+      function hexToRgb(hex) {
+        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+          ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+            }
+          : null;
       }
 
       // output file to the download folder
@@ -413,7 +480,7 @@
         );
         // save as ziped ggb file
         zip.generateAsync({ type: "blob" }).then(function (content) {
-          saveAs(content, fileName + ".ggb");
+          saveAs(content, fileName.replace(".dxf", "") + ".ggb");
         });
       }
     </script>
