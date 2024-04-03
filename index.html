@@ -21,7 +21,10 @@
     <input id="inputfile" type="file" name="inputfile" />
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <table id="layerList"></table>
-    <h3>3. Export the data as a GGB file for Geogebra</h3>
+    <h3>3. Enter values to substract from every point (move map closer to origin)</h3>
+    <input id="translationX" type="number" name="translationX" />
+    <input id="translationY" type="number" name="translationY" />
+    <h3>4. Export the data as a GGB file for Geogebra</h3>
     <button id="submit" onclick="exportGgbFile()">Export to GGB</button>
     <br />
     <br />
@@ -35,6 +38,7 @@
       let fileName = "test";
 
       // final data - important for the export
+      let header;
       let usedLayerEntryTypes = new Map();
       let points = {};
       let ggbSegments = {};
@@ -95,6 +99,7 @@
         };
 
         // remember layers for the layer colors later on
+        header = dxf.header;
         const layers = dxf.tables.layer.layers;
 
         // temporary variables for conversion
@@ -289,7 +294,14 @@
           cell3.appendChild(sizeSelector);
         }
 
-        // TODO add an option to move all points by two values towards the origin (0, 0)
+        // fill in suggested map translation values 
+        const lowerLeftCorner = header.$EXTMIN;
+        let translation = {
+          x: Math.floor(lowerLeftCorner.x),
+          y: Math.floor(lowerLeftCorner.y),
+        };
+        document.getElementById("translationX").value = translation.x;
+        document.getElementById("translationY").value = translation.y;
       }
 
       function parseHandle(handle) {
@@ -363,7 +375,7 @@
       function exportGgbFile() {
         // TODO remove duplicate lines
 
-        // read layer costumisations from ui
+        // read layer customizations from ui
         let layerStyles = {};
         let layerList = document.getElementById("layerList");
         let layerListElements = layerList.children[0].children;
@@ -376,6 +388,12 @@
           value.size = element.getElementsByClassName("size")[0].value;
           layerStyles[element.id] = value;
         }
+
+        // read map translation values from ui
+        let translation = {
+          x: document.getElementById("translationX").value,
+          y: document.getElementById("translationY").value,
+        };
 
         // prepare xml data for final file
         let ggbContent = "";
@@ -395,7 +413,7 @@
             `  <labelMode val="0"/>\n` +
             `  <fixed val="true"/>\n` +
             `  <auxiliary val="true"/>\n` +
-            `  <coords x="${point.x}" y="${point.y}" z="1.0"/>\n` +
+            `  <coords x="${point.x - translation.x}" y="${point.y - translation.y}" z="1.0"/>\n` +
             `  <pointSize val="${style.size}"/>\n` +
             `  <pointStyle val="${style.style}"/>\n` +
             `  <caption val="${point.subtypeName} (${point.layer})"/>\n` +
@@ -417,7 +435,7 @@
             `  <labelMode val="3"/>\n` +
             `  <fixed val="true"/>\n` +
             `  <auxiliary val="true"/>\n` +
-            `  <coords x="${text.x}" y="${text.y}" z="1.0"/>\n` +
+            `  <coords x="${text.x - translation.x}" y="${text.y - translation.y}" z="1.0"/>\n` +
             `  <pointSize val="${style.size}"/>\n` +
             `  <pointStyle val="${style.style}"/>\n` +
             `  <caption val="${text.text}"/>\n` +
