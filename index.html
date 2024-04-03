@@ -137,7 +137,7 @@
 
           let key;
           switch (entity.type) {
-            // TODO delete unnecessary attributes
+            // TODO delete unnecessary attributes?
             case "INSERT":
               key = "P" + parseHandle(entity.handle);
               points[key] = {};
@@ -220,10 +220,10 @@
         }
 
         // show used layers and
-        // TODO add an option to select wanted ones
+        // add an option to select wanted ones
         // 1. add an html element for each and provide an option to remove each one
         // 2. provide an option to asign point/line/text types
-        //    (and duplicate policies -> nichtfestgestellteGrenze line stays; flurstueck line is removed)
+        //    TODO provide duplicate policies (e.g. nichtfestgestellteGrenze line stays; flurstueck line is removed)
         //    What about line-point dependencies?
         // 3. collect the remaining ones afterwards
 
@@ -245,7 +245,7 @@
           let selectCheckbox = document.createElement("input");
           selectCheckbox.className = "selected";
           selectCheckbox.type = "checkbox";
-          selectCheckbox.checked = true; // TODO set back to true
+          selectCheckbox.checked = true;
           selectCheckbox.id = selectedSelectorId;
           cell0.appendChild(selectCheckbox);
           // selected - label
