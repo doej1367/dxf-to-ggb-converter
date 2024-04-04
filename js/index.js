@@ -10,7 +10,7 @@ let ggbSegments = new Map();
 let texts = new Map();
 
 // add listener for file input
-let fileInputElement = document.getElementById("inputfile");
+const fileInputElement = document.getElementById("inputfile");
 fileInputElement.addEventListener("change", function () {
   // reset variables if file is changed
   document.getElementById("output").textContent = "";
@@ -22,11 +22,11 @@ fileInputElement.addEventListener("change", function () {
   ggbSegments = new Map();
   texts = new Map();
   // load files
-  let fileReaders = [];
+  const fileReaders = [];
   for (const file of this.files) {
     fileReaders.push(
       new Promise(function (resolve, reject) {
-        let inputReader = new FileReader();
+        const inputReader = new FileReader();
         inputReader.onload = function () {
           resolve({
             fileName: file.name,
@@ -55,7 +55,7 @@ function processFile(dxfFileName, dxfContent) {
   // parse dxf file
   const parser = new DxfParser();
   try {
-    let dxf = parser.parseSync(dxfContent);
+    const dxf = parser.parseSync(dxfContent);
     extractXmlFromDxf(dxf);
     fileName += dxfFileName.replace(".dxf", "");
   } catch (err) {
@@ -71,7 +71,7 @@ function processFile(dxfFileName, dxfContent) {
 
 function extractXmlFromDxf(dxf) {
   // COMMENT mark exists?  1xxx = yes, 9xxx = no
-  let pointTypesMap = new Map(
+  const pointTypesMap = new Map(
     Object.entries({
       1000: "allgemeineMarke",
       1200: "Rohr",
@@ -89,7 +89,7 @@ function extractXmlFromDxf(dxf) {
   );
 
   // remember layers for the layer colors later on
-  let header = dxf.header;
+  const header = dxf.header;
   if (!lowerLeftCorner.x || header.$EXTMIN.x < lowerLeftCorner.x) {
     lowerLeftCorner.x = header.$EXTMIN.x;
   }
@@ -100,11 +100,11 @@ function extractXmlFromDxf(dxf) {
   const layers = dxf.tables.layer.layers;
 
   // temporary variables for conversion
-  let dxfVectorToGgbPointMap = new Map();
-  let dxfPolyLines = new Map();
+  const dxfVectorToGgbPointMap = new Map();
+  const dxfPolyLines = new Map();
 
   // find additional info in dxf.blocks
-  let additionalInfos = new Map();
+  const additionalInfos = new Map();
   const blocks = dxf.blocks;
   for (const key in blocks) {
     const block = blocks[key];
@@ -112,11 +112,11 @@ function extractXmlFromDxf(dxf) {
     additionalInfos.set(block.name, info);
   }
   // find main info about e.g. coordinates in dxf.entities
-  let entities = dxf.entities;
+  const entities = dxf.entities;
   for (const entity of entities) {
-    let layerEntryType =
+    const layerEntryType =
       entity.type + " " + entity.layer + (entity.name ? " " + entity.name : "");
-    let subtypeName =
+    const subtypeName =
       pointTypesMap.get(entity?.name?.replace("ABM_", "")) ?? entity.name;
     if (!usedLayerEntryTypes.has(layerEntryType)) {
       const entryType = {
@@ -235,24 +235,24 @@ function displayLayersAndTranslationSuggestion() {
   usedLayerEntryTypes = new Map([...usedLayerEntryTypes.entries()].sort());
 
   // show usedLayerEntryTypes
-  let layerTable = document.getElementById("layerList");
+  const layerTable = document.getElementById("layerList");
   layerTable.textContent = "";
   for (const [key, entryType] of usedLayerEntryTypes) {
     // create layer item
-    let tableRow = layerTable.insertRow(-1);
+    const tableRow = layerTable.insertRow(-1);
     tableRow.id = key;
     // selected - are the items of this layer included in the export?
-    let cell0 = tableRow.insertCell(0);
-    let selectedSelectorId = key + "_selected";
-    let selectCheckbox = document.createElement("input");
+    const cell0 = tableRow.insertCell(0);
+    const selectedSelectorId = key + "_selected";
+    const selectCheckbox = document.createElement("input");
     selectCheckbox.className = "selected";
     selectCheckbox.type = "checkbox";
     selectCheckbox.checked = true;
     selectCheckbox.id = selectedSelectorId;
     cell0.appendChild(selectCheckbox);
     // selected - label
-    let labelId = key + "_label";
-    let label = document.createElement("label");
+    const labelId = key + "_label";
+    const label = document.createElement("label");
     label.textContent =
       entryType.type +
       " " +
@@ -262,26 +262,26 @@ function displayLayersAndTranslationSuggestion() {
     label.id = labelId;
     cell0.appendChild(label);
     // point or line style for the items of this layer
-    let cell1 = tableRow.insertCell(1);
-    let styleSelectorId = key + "_style";
-    let styleSelector =
+    const cell1 = tableRow.insertCell(1);
+    const styleSelectorId = key + "_style";
+    const styleSelector =
       entryType.type == "INSERT" || entryType.type == "TEXT"
         ? createPointStyleSelector(styleSelectorId)
         : createLineStyleSelector(styleSelectorId);
     cell1.appendChild(styleSelector);
     // color for the items of this layer
-    let cell2 = tableRow.insertCell(2);
-    let colorSelectorId = key + "_color";
-    let colorSelector = document.createElement("input");
+    const cell2 = tableRow.insertCell(2);
+    const colorSelectorId = key + "_color";
+    const colorSelector = document.createElement("input");
     colorSelector.className = "color";
     colorSelector.type = "color";
     colorSelector.value = entryType.color;
     colorSelector.id = colorSelectorId;
     cell2.appendChild(colorSelector);
     // size for the items of this layer
-    let cell3 = tableRow.insertCell(3);
-    let sizeSelectorId = key + "_size";
-    let sizeSelector = document.createElement("input");
+    const cell3 = tableRow.insertCell(3);
+    const sizeSelectorId = key + "_size";
+    const sizeSelector = document.createElement("input");
     sizeSelector.className = "size";
     sizeSelector.type = "number";
     sizeSelector.value = entryType.type == "INSERT" ? 3 : 2;
@@ -292,7 +292,7 @@ function displayLayersAndTranslationSuggestion() {
   }
 
   // fill in suggested map translation values
-  let translation = {
+  const translation = {
     x: Math.floor(lowerLeftCorner.x),
     y: Math.floor(lowerLeftCorner.y),
   };
@@ -343,13 +343,13 @@ function createPoint(
 }
 
 function createPointStyleSelector(styleSelectorId) {
-  let dotStyles = ["⏺", "x", "⭘", "+", "◆", "◇", "⮝", "⮟", "⮞", "⮜"];
-  let styleSelector = document.createElement("select");
+  const dotStyles = ["⏺", "x", "⭘", "+", "◆", "◇", "⮝", "⮟", "⮞", "⮜"];
+  const styleSelector = document.createElement("select");
   styleSelector.className = "style";
   styleSelector.id = styleSelectorId;
   for (const i in dotStyles) {
     const style = dotStyles[i];
-    let option = document.createElement("option");
+    const option = document.createElement("option");
     option.value = i;
     option.text = style;
     styleSelector.appendChild(option);
@@ -358,13 +358,13 @@ function createPointStyleSelector(styleSelectorId) {
 }
 
 function createLineStyleSelector(styleSelectorId) {
-  let dotStyles = { 0: "-----", 15: "- - -" };
-  let styleSelector = document.createElement("select");
+  const dotStyles = { 0: "-----", 15: "- - -" };
+  const styleSelector = document.createElement("select");
   styleSelector.className = "style";
   styleSelector.id = styleSelectorId;
   for (const i in dotStyles) {
     const style = dotStyles[i];
-    let option = document.createElement("option");
+    const option = document.createElement("option");
     option.value = i;
     option.text = style;
     styleSelector.appendChild(option);
@@ -376,9 +376,9 @@ function exportGgbFile() {
   // TODO remove duplicate lines
 
   // read layer customizations from ui
-  let layerStyles = new Map();
-  let layerList = document.getElementById("layerList");
-  let layerListElements = layerList.children[0].children;
+  const layerStyles = new Map();
+  const layerList = document.getElementById("layerList");
+  const layerListElements = layerList.children[0].children;
   for (const element of layerListElements) {
     const layerStyle = {
       selected: element.getElementsByClassName("selected")[0].checked,
@@ -390,7 +390,7 @@ function exportGgbFile() {
   }
 
   // read map translation values from ui
-  let translation = {
+  const translation = {
     x: document.getElementById("translationX").value,
     y: document.getElementById("translationY").value,
   };
@@ -476,7 +476,7 @@ function exportGgbFile() {
 
 // from https://stackoverflow.com/a/5624139/6307611
 function hexToRgb(hex) {
-  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result
     ? {
         r: parseInt(result[1], 16),
@@ -489,14 +489,14 @@ function hexToRgb(hex) {
 // output file to the download folder
 function saveToGGB(ggbContent) {
   // start zip creation
-  let zip = new JSZip();
+  const zip = new JSZip();
   // create an empty geogebra.xml file
   // and add the elements and commands from the ggbContent
-  let xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
-  let ggbHeader =
+  const xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
+  const ggbHeader =
     '<geogebra format="5.0" >\n' +
     '<construction title="" author="" date="">\n';
-  let ggbFooter = "</construction>\n" + "</geogebra>\n";
+  const ggbFooter = "</construction>\n" + "</geogebra>\n";
   zip.file("geogebra.xml", xmlHeader + ggbHeader + ggbContent + ggbFooter);
   // save as ziped ggb file
   zip.generateAsync({ type: "blob" }).then(function (content) {
