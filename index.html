@@ -41,9 +41,9 @@
       let fileName = "test";
       let lowerLeftCorner = {};
       let usedLayerEntryTypes = new Map();
-      let points = {};
-      let ggbSegments = {};
-      let texts = {};
+      let points = new Map();
+      let ggbSegments = new Map();
+      let texts = new Map();
 
       // add listener for file input
       let fileInputElement = document.getElementById("inputfile");
@@ -53,9 +53,9 @@
         fileName = "";
         lowerLeftCorner = {};
         usedLayerEntryTypes = new Map();
-        points = {};
-        ggbSegments = {};
-        texts = {};
+        points = new Map();
+        ggbSegments = new Map();
+        texts = new Map();
         // load files
         let fileReaders = [];
         for (const file of this.files) {
@@ -106,20 +106,22 @@
 
       function extractXmlFromDxf(dxf) {
         // COMMENT mark exists?  1xxx = yes, 9xxx = no
-        let pointTypesMap = {
-          1000: "allgemeineMarke",
-          1200: "Rohr",
-          1120: "unbehauenerFeldstein",
-          1110: "Grenzstein",
-          1650: "Klebemarke",
-          1500: "Pfahl",
-          1655: "Schlagmarke",
-          1400: "Meisselzeichen",
-          1300: "Nagel",
-          9500: "ohneMarke",
-          9998: "NachQuellangabenNichtZuSpezifizieren",
-          9600: "AbmarkungZeitweiligAusgesetzt",
-        };
+        let pointTypesMap = new Map(
+          Object.entries({
+            1000: "allgemeineMarke",
+            1200: "Rohr",
+            1120: "unbehauenerFeldstein",
+            1110: "Grenzstein",
+            1650: "Klebemarke",
+            1500: "Pfahl",
+            1655: "Schlagmarke",
+            1400: "Meisselzeichen",
+            1300: "Nagel",
+            9500: "ohneMarke",
+            9998: "NachQuellangabenNichtZuSpezifizieren",
+            9600: "AbmarkungZeitweiligAusgesetzt",
+          })
+        );
 
         // remember layers for the layer colors later on
         let header = dxf.header;
@@ -133,17 +135,16 @@
         const layers = dxf.tables.layer.layers;
 
         // temporary variables for conversion
-        let dxfVectorToGgbPointMap = {};
-        let dxfPolyLines = {};
+        let dxfVectorToGgbPointMap = new Map();
+        let dxfPolyLines = new Map();
 
         // find additional info in dxf.blocks
-        let additionalInfos = {};
+        let additionalInfos = new Map();
         const blocks = dxf.blocks;
         for (const key in blocks) {
-          let block = blocks[key];
-          additionalInfos[block.name] = {};
-          additionalInfos[block.name].layer = block.layer;
-          additionalInfos[block.name].comment = block.name2;
+          const block = blocks[key];
+          const info = { layer: block.layer, comment: block.name2 };
+          additionalInfos.set(block.name, info);
         }
         // find main info about e.g. coordinates in dxf.entities
         let entities = dxf.entities;
@@ -154,65 +155,71 @@
             entity.layer +
             (entity.name ? " " + entity.name : "");
           let subtypeName =
-            pointTypesMap[entity?.name?.replace("ABM_", "")] ?? entity.name;
+            pointTypesMap.get(entity?.name?.replace("ABM_", "")) ?? entity.name;
           if (!usedLayerEntryTypes.has(layerEntryType)) {
-            let value = {};
-            value.type = entity.type;
-            value.subtypeId = entity.name;
-            value.subtypeName = subtypeName;
-            value.layer = entity.layer;
-            value.color =
-              "#" +
-              layers[entity.layer].color
-                .toString(16)
-                .toLowerCase()
-                .padStart(6, 0);
-            usedLayerEntryTypes.set(layerEntryType, value);
+            const entryType = {
+              type: entity.type,
+              subtypeId: entity.name,
+              subtypeName: subtypeName,
+              layer: entity.layer,
+              color:
+                "#" +
+                layers[entity.layer].color
+                  .toString(16)
+                  .toLowerCase()
+                  .padStart(6, 0),
+            };
+            usedLayerEntryTypes.set(layerEntryType, entryType);
           }
 
           let key;
           switch (entity.type) {
             // TODO delete unnecessary attributes?
             case "INSERT":
-              key = "P" + parseHandle(entity.handle);
-              points[key] = {};
-              points[key].entryType = layerEntryType;
-              points[key].layer = entity.layer;
-              points[key].x = entity.position.x;
-              points[key].y = entity.position.y;
-              points[key].subtypeId = entity.name;
-              points[key].subtypeName = subtypeName;
-              const info = additionalInfos[entity.name];
+              key = "P" + points.size;
+              const point = {
+                entryType: layerEntryType,
+                layer: entity.layer,
+                x: entity.position.x,
+                y: entity.position.y,
+                subtypeId: entity.name,
+                subtypeName: subtypeName,
+              };
+              points.set(key, point);
+              const info = additionalInfos.get(entity.name);
               if (info.layer == entity.layer) {
-                points[key].comment = info.comment;
+                points.get(key).comment = info.comment;
               }
-              let vectorKey = entity.position.x + "," + entity.position.y;
-              dxfVectorToGgbPointMap[vectorKey] = key;
+              const vectorKey = entity.position.x + "," + entity.position.y;
+              dxfVectorToGgbPointMap.set(vectorKey, key);
               break;
             case "LINE":
             case "LWPOLYLINE":
-              key = "L" + parseHandle(entity.handle);
-              dxfPolyLines[key] = {};
-              dxfPolyLines[key].entryType = layerEntryType;
-              dxfPolyLines[key].layer = entity.layer;
-              dxfPolyLines[key].vertices = entity.vertices;
+              key = "L" + dxfPolyLines.size;
+              const line = {
+                entryType: layerEntryType,
+                layer: entity.layer,
+                vertices: entity.vertices,
+              };
+              dxfPolyLines.set(key, line);
               break;
             case "TEXT":
-              key = "T" + parseHandle(entity.handle);
-              texts[key] = {};
-              texts[key].entryType = layerEntryType;
-              texts[key].layer = entity.layer;
-              texts[key].x = entity.startPoint.x;
-              texts[key].y = entity.startPoint.y;
-              texts[key].text = entity.text;
+              key = "T" + texts.size;
+              const text = {
+                entryType: layerEntryType,
+                layer: entity.layer,
+                x: entity.startPoint.x,
+                y: entity.startPoint.y,
+                text: entity.text,
+              };
+              texts.set(key, text);
               break;
             default:
               break;
           }
         }
         // find and add node handles for lines and polylines
-        for (const key in dxfPolyLines) {
-          let line = dxfPolyLines[key];
+        for (const [key, line] of dxfPolyLines) {
           // set first start point
           let startPoint = line.vertices[0];
           let startVectorKey = startPoint.x + "," + startPoint.y;
@@ -224,7 +231,7 @@
             // segment handle
             let ggbSegmentKey = key + "L" + i.toString(10);
             // create points if they don't exist
-            if (!dxfVectorToGgbPointMap[startVectorKey]) {
+            if (!dxfVectorToGgbPointMap.has(startVectorKey)) {
               createPoint(
                 usedLayerEntryTypes,
                 dxfVectorToGgbPointMap,
@@ -232,7 +239,7 @@
                 ggbSegmentKey + "S"
               );
             }
-            if (!dxfVectorToGgbPointMap[endVectorKey]) {
+            if (!dxfVectorToGgbPointMap.has(endVectorKey)) {
               createPoint(
                 usedLayerEntryTypes,
                 dxfVectorToGgbPointMap,
@@ -241,13 +248,13 @@
               );
             }
             // add new segment to ggbSegments
-            ggbSegments[ggbSegmentKey] = {};
-            ggbSegments[ggbSegmentKey].entryType = line.entryType;
-            ggbSegments[ggbSegmentKey].layer = line.layer;
-            ggbSegments[ggbSegmentKey].startPoint =
-              dxfVectorToGgbPointMap[startVectorKey];
-            ggbSegments[ggbSegmentKey].endPoint =
-              dxfVectorToGgbPointMap[endVectorKey];
+            const segment = {
+              entryType: line.entryType,
+              layer: line.layer,
+              startPoint: dxfVectorToGgbPointMap.get(startVectorKey),
+              endPoint: dxfVectorToGgbPointMap.get(endVectorKey),
+            };
+            ggbSegments.set(ggbSegmentKey, segment);
             // set end point as start point for next line segment
             startPoint = endPoint;
             startVectorKey = endVectorKey;
@@ -345,32 +352,36 @@
         newPoint,
         segmentPointHandle
       ) {
-        let type = "INSERT";
-        let layer = "linienpunkt_sonstiger";
-        let subtypeId = "UNBEKANNT";
-        let subtypeName = "Unbekannt";
+        const type = "INSERT";
+        const layer = "linienpunkt_sonstiger";
+        const subtypeId = "UNBEKANNT";
+        const subtypeName = "Unbekannt";
 
-        let layerEntryType = type + " " + layer + " " + subtypeId;
+        const layerEntryType = type + " " + layer + " " + subtypeId;
         if (!usedLayerEntryTypes.has(layerEntryType)) {
-          let value = {};
-          value.type = type;
-          value.subtypeId = subtypeId;
-          value.subtypeName = subtypeName;
-          value.layer = layer;
-          value.color = "#dbdbdb";
-          usedLayerEntryTypes.set(layerEntryType, value);
+          const entryType = {
+            type: type,
+            subtypeId: subtypeId,
+            subtypeName: subtypeName,
+            layer: layer,
+            color: "#dbdbdb",
+          };
+          usedLayerEntryTypes.set(layerEntryType, entryType);
         }
 
         const key = "P" + segmentPointHandle;
-        points[key] = {};
-        points[key].entryType = layerEntryType;
-        points[key].layer = layer;
-        points[key].x = newPoint.x;
-        points[key].y = newPoint.y;
-        points[key].subtypeId = subtypeId;
-        points[key].subtypeName = subtypeName;
-        let vectorKey = newPoint.x + "," + newPoint.y;
-        vectorToPointMap[vectorKey] = key;
+        const point = {
+          entryType: layerEntryType,
+          layer: layer,
+          x: newPoint.x,
+          y: newPoint.y,
+          subtypeId: subtypeId,
+          subtypeName: subtypeName,
+        };
+        points.set(key, point);
+
+        const vectorKey = newPoint.x + "," + newPoint.y;
+        vectorToPointMap.set(vectorKey, key);
       }
 
       function createPointStyleSelector(styleSelectorId) {
@@ -407,17 +418,17 @@
         // TODO remove duplicate lines
 
         // read layer customizations from ui
-        let layerStyles = {};
+        let layerStyles = new Map();
         let layerList = document.getElementById("layerList");
         let layerListElements = layerList.children[0].children;
         for (const element of layerListElements) {
-          let value = {};
-          value.selected =
-            element.getElementsByClassName("selected")[0].checked;
-          value.style = element.getElementsByClassName("style")[0].value;
-          value.color = element.getElementsByClassName("color")[0].value;
-          value.size = element.getElementsByClassName("size")[0].value;
-          layerStyles[element.id] = value;
+          const layerStyle = {
+            selected: element.getElementsByClassName("selected")[0].checked,
+            style: element.getElementsByClassName("style")[0].value,
+            color: element.getElementsByClassName("color")[0].value,
+            size: element.getElementsByClassName("size")[0].value,
+          };
+          layerStyles.set(element.id, layerStyle);
         }
 
         // read map translation values from ui
@@ -429,9 +440,8 @@
         // prepare xml data for final file
         let ggbContent = "";
 
-        for (const key in points) {
-          const point = points[key];
-          const style = layerStyles[point.entryType];
+        for (const [key, point] of points) {
+          const style = layerStyles.get(point.entryType);
           if (!style.selected) {
             continue;
           }
@@ -453,9 +463,8 @@
             "</element>\n";
         }
 
-        for (const key in texts) {
-          const text = texts[key];
-          const style = layerStyles[text.entryType];
+        for (const [key, text] of texts) {
+          const style = layerStyles.get(text.entryType);
           if (!style.selected) {
             continue;
           }
@@ -477,9 +486,8 @@
             "</element>\n";
         }
 
-        for (const key in ggbSegments) {
-          const segment = ggbSegments[key];
-          const style = layerStyles[segment.entryType];
+        for (const [key, segment] of ggbSegments) {
+          const style = layerStyles.get(segment.entryType);
           if (!style.selected) {
             continue;
           }
