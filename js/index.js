@@ -1,6 +1,7 @@
 // final data - important for the export
 let fileName = "test";
 let lowerLeftCorner = {};
+let upperRightCorner = {};
 let usedLayerEntryTypes = new Map();
 let points = new Map();
 let polyLineCount = 0;
@@ -14,6 +15,7 @@ fileInputElement.addEventListener("change", () => {
   document.getElementById("output").textContent = "";
   fileName = "";
   lowerLeftCorner = {};
+  upperRightCorner = {};
   usedLayerEntryTypes = new Map();
   points = new Map();
   polyLineCount = 0;
@@ -89,6 +91,12 @@ function extractXmlFromDxf(dxf) {
   }
   if (!lowerLeftCorner.y || header.$EXTMIN.y < lowerLeftCorner.y) {
     lowerLeftCorner.y = header.$EXTMIN.y;
+  }
+  if (!upperRightCorner.x || header.$EXTMAX.x > upperRightCorner.x) {
+    upperRightCorner.x = header.$EXTMAX.x;
+  }
+  if (!upperRightCorner.y || header.$EXTMAX.y > upperRightCorner.y) {
+    upperRightCorner.y = header.$EXTMAX.y;
   }
 
   const { layers } = dxf.tables.layer;
@@ -471,9 +479,32 @@ function saveToGGB(ggbContent) {
   // create an empty geogebra.xml file
   // and add the elements and commands from the ggbContent
   const xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
+
+  const mapWidth = upperRightCorner.x - lowerLeftCorner.x;
+  const mapHeight = upperRightCorner.y - lowerLeftCorner.y;
+
+  const spaceLeft = 50;
+  const spaceRight = 10;
+  const spaceTop = 10;
+  const spaceBottom = 40;
+
+  const panelWidth = 570;
+  const panelHeight = 440;
+  const xZero = spaceLeft;
+  const yZero = panelHeight - spaceBottom;
+
+  const xScale = (panelWidth - spaceLeft - spaceRight) / mapWidth;
+  const yScale = (panelHeight - spaceBottom - spaceTop) / mapHeight;
+  const scale = Math.min(xScale, yScale);
+
   const ggbHeader =
-    '<geogebra format="5.0" >\n' +
-    '<construction title="" author="" date="">\n';
+    `<geogebra format="5.0" >\n` +
+    `<euclidianView>\n` +
+    `  <size  width="${panelWidth}" height="${panelHeight}"/>\n` +
+    `  <coordSystem xZero="${xZero}" yZero="${yZero}" scale="${scale}" yscale="${scale}"/>\n` +
+    `</euclidianView>\n` +
+    `<construction title="" author="" date="">\n`;
+
   const ggbFooter = "</construction>\n</geogebra>\n";
   zip.file("geogebra.xml", xmlHeader + ggbHeader + ggbContent + ggbFooter);
   // save as ziped ggb file
