@@ -93,6 +93,7 @@ function exportGgbFile() {
       `  <lineStyle thickness="1" type="${style.style}" typeHidden="1"/>\n` +
       `  <outlyingIntersections val="false"/>\n` +
       `  <keepTypeOnTransform val="true"/>\n` +
+      `  <caption val="${segment.layer}"/>\n` +
       `</element>\n`;
   });
 
