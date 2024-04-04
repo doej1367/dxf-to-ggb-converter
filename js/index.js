@@ -21,9 +21,9 @@ fileInputElement.addEventListener("change", () => {
   texts = new Map();
   // load files
   const fileReaders = [];
-  for (const file of fileInputElement.files) {
+  Array.from(fileInputElement.files).forEach((file) => {
     fileReaders.push(
-      new Promise(function (resolve, reject) {
+      new Promise((resolve, reject) => {
         const inputReader = new FileReader();
         inputReader.onload = () => {
           resolve({
@@ -37,13 +37,13 @@ fileInputElement.addEventListener("change", () => {
         inputReader.readAsText(file);
       })
     );
-  }
+  });
   // process files and
   // display layers and translation suggestion
   Promise.all(fileReaders).then((results) => {
-    for (const result of results) {
+    results.forEach((result) => {
       processFile(result.fileName, result.fileContent);
-    }
+    });
     displayLayersAndTranslationSuggestion();
   });
 });
@@ -100,16 +100,19 @@ function extractXmlFromDxf(dxf) {
   // find additional info in dxf.blocks
   const additionalInfos = new Map();
   const { blocks } = dxf;
+
   for (const key in blocks) {
-    const block = blocks[key];
-    const info = { layer: block.layer, comment: block.name2 };
-    additionalInfos.set(block.name, info);
+    if (Object.hasOwn(blocks, key)) {
+      const block = blocks[key];
+      const info = { layer: block.layer, comment: block.name2 };
+      additionalInfos.set(block.name, info);
+    }
   }
   // find main info about e.g. coordinates in dxf.entities
   const { entities } = dxf;
-  for (const entity of entities) {
+  entities.forEach((entity) => {
     const layerEntryType = `${entity.type} ${entity.layer}${
-      entity.name ? " " + entity.name : ""
+      entity.name ? ` ${entity.name}` : ""
     }`;
     const subtypeName =
       pointTypesMap.get(entity?.name?.replace("ABM_", "")) ?? entity.name;
@@ -142,7 +145,7 @@ function extractXmlFromDxf(dxf) {
         };
         points.set(key, point);
         const info = additionalInfos.get(entity.name);
-        if (info.layer == entity.layer) {
+        if (info.layer === entity.layer) {
           points.get(key).comment = info.comment;
         }
         const vectorKey = `${entity.position.x},${entity.position.y}`;
@@ -173,9 +176,9 @@ function extractXmlFromDxf(dxf) {
       default:
         break;
     }
-  }
+  });
   // find and add node handles for lines and polylines
-  for (const [key, line] of dxfPolyLines) {
+  dxfPolyLines.forEach((line, key, map) => {
     // set first start point
     let startPoint = line.vertices[0];
     let startVectorKey = `${startPoint.x},${startPoint.y}`;
@@ -205,7 +208,7 @@ function extractXmlFromDxf(dxf) {
       startPoint = endPoint;
       startVectorKey = endVectorKey;
     }
-  }
+  });
 }
 
 function displayLayersAndTranslationSuggestion() {
@@ -224,7 +227,7 @@ function displayLayersAndTranslationSuggestion() {
   // show usedLayerEntryTypes
   const layerTable = document.getElementById("layerList");
   layerTable.textContent = "";
-  for (const [key, entryType] of usedLayerEntryTypes) {
+  usedLayerEntryTypes.forEach((entryType, key, map) => {
     // create layer item
     const tableRow = layerTable.insertRow(-1);
     tableRow.id = key;
@@ -241,7 +244,7 @@ function displayLayersAndTranslationSuggestion() {
     const labelId = `${key}_label`;
     const label = document.createElement("label");
     label.textContent = `${entryType.type} ${entryType.layer}${
-      entryType.subtypeName ? " " + entryType.subtypeName : ""
+      entryType.subtypeName ? ` ${entryType.subtypeName}` : ""
     }`;
     label.htmlFor = selectedSelectorId;
     label.id = labelId;
@@ -250,7 +253,7 @@ function displayLayersAndTranslationSuggestion() {
     const cell1 = tableRow.insertCell(1);
     const styleSelectorId = `${key}_style`;
     const styleSelector =
-      entryType.type == "INSERT" || entryType.type == "TEXT"
+      entryType.type === "INSERT" || entryType.type === "TEXT"
         ? createPointStyleSelector(styleSelectorId)
         : createLineStyleSelector(styleSelectorId);
     cell1.appendChild(styleSelector);
@@ -269,12 +272,13 @@ function displayLayersAndTranslationSuggestion() {
     const sizeSelector = document.createElement("input");
     sizeSelector.className = "size";
     sizeSelector.type = "number";
-    sizeSelector.value = entryType.type == "INSERT" ? 3 : 2;
+    sizeSelector.value = entryType.type === "INSERT" ? 3 : 2;
     sizeSelector.size = 4;
     sizeSelector.min = 1;
-    sizeSelector.max = entryType.type == "INSERT" ? 9 : 13;
+    sizeSelector.max = entryType.type === "INSERT" ? 9 : 13;
+    sizeSelector.id = sizeSelectorId;
     cell3.appendChild(sizeSelector);
-  }
+  });
 
   // fill in suggested map translation values
   const translation = {
@@ -323,27 +327,26 @@ function createPointStyleSelector(styleSelectorId) {
   const styleSelector = document.createElement("select");
   styleSelector.className = "style";
   styleSelector.id = styleSelectorId;
-  for (const i in dotStyles) {
-    const style = dotStyles[i];
+  dotStyles.forEach((style, i, map) => {
     const option = document.createElement("option");
     option.value = i;
     option.text = style;
     styleSelector.appendChild(option);
-  }
+  });
   return styleSelector;
 }
 
 function createLineStyleSelector(styleSelectorId) {
-  const dotStyles = Object.entries({ 0: "-----", 15: "- - -" });
+  const dotStyles = new Map(Object.entries({ 0: "-----", 15: "- - -" }));
   const styleSelector = document.createElement("select");
   styleSelector.className = "style";
   styleSelector.id = styleSelectorId;
-  for (const [i, style] in dotStyles) {
+  dotStyles.forEach((style, i, map) => {
     const option = document.createElement("option");
     option.value = i;
     option.text = style;
     styleSelector.appendChild(option);
-  }
+  });
   return styleSelector;
 }
 
@@ -373,10 +376,10 @@ function exportGgbFile() {
   // prepare xml data for final file
   let ggbContent = "";
 
-  for (const [key, point] of points) {
+  points.forEach((point, key, map) => {
     const style = layerStyles.get(point.entryType);
     if (!style.selected) {
-      continue;
+      return;
     }
     const color = hexToRgb(style.color);
     ggbContent +=
@@ -394,12 +397,12 @@ function exportGgbFile() {
       `  <pointStyle val="${style.style}"/>\n` +
       `  <caption val="${point.subtypeName} (${point.layer})"/>\n` +
       "</element>\n";
-  }
+  });
 
-  for (const [key, text] of texts) {
+  texts.forEach((text, key, map) => {
     const style = layerStyles.get(text.entryType);
     if (!style.selected) {
-      continue;
+      return;
     }
     const color = hexToRgb(style.color);
     ggbContent +=
@@ -417,12 +420,12 @@ function exportGgbFile() {
       `  <pointStyle val="${style.style}"/>\n` +
       `  <caption val="${text.text}"/>\n` +
       "</element>\n";
-  }
+  });
 
-  for (const [key, segment] of ggbSegments) {
+  ggbSegments.forEach((segment, key, map) => {
     const style = layerStyles.get(segment.entryType);
     if (!style.selected) {
-      continue;
+      return;
     }
     const color = hexToRgb(style.color);
     ggbContent +=
@@ -442,7 +445,7 @@ function exportGgbFile() {
       `  <outlyingIntersections val="false"/>\n` +
       `  <keepTypeOnTransform val="true"/>\n` +
       `</element>\n`;
-  }
+  });
 
   saveToGGB(ggbContent);
 
