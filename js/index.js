@@ -1,5 +1,3 @@
-"use strict";
-
 // final data - important for the export
 let fileName = "test";
 let lowerLeftCorner = {};
@@ -23,7 +21,7 @@ fileInputElement.addEventListener("change", () => {
   texts = new Map();
   // load files
   const fileReaders = [];
-  for (const file of this.files) {
+  for (const file of fileInputElement.files) {
     fileReaders.push(
       new Promise(function (resolve, reject) {
         const inputReader = new FileReader();
@@ -59,13 +57,9 @@ function processFile(dxfFileName, dxfContent) {
     extractXmlFromDxf(dxf);
     fileName += dxfFileName.replace(".dxf", "");
   } catch (err) {
-    document.getElementById("output").textContent +=
-      "\nERROR: Something might be wrong with the provided dxf file!\n\n" +
-      err.name +
-      ", " +
-      err.message +
-      ": \n" +
-      err.stack;
+    document.getElementById(
+      "output"
+    ).textContent += `\nERROR: Something might be wrong with the provided dxf file!\n\n${err.name}, ${err.message}: \n${err.stack}`;
   }
 }
 
@@ -89,7 +83,7 @@ function extractXmlFromDxf(dxf) {
   );
 
   // remember layers for the layer colors later on
-  const header = dxf.header;
+  const { header } = dxf;
   if (!lowerLeftCorner.x || header.$EXTMIN.x < lowerLeftCorner.x) {
     lowerLeftCorner.x = header.$EXTMIN.x;
   }
@@ -97,7 +91,7 @@ function extractXmlFromDxf(dxf) {
     lowerLeftCorner.y = header.$EXTMIN.y;
   }
 
-  const layers = dxf.tables.layer.layers;
+  const { layers } = dxf.tables.layer;
 
   // temporary variables for conversion
   const dxfVectorToGgbPointMap = new Map();
@@ -105,28 +99,30 @@ function extractXmlFromDxf(dxf) {
 
   // find additional info in dxf.blocks
   const additionalInfos = new Map();
-  const blocks = dxf.blocks;
+  const { blocks } = dxf;
   for (const key in blocks) {
     const block = blocks[key];
     const info = { layer: block.layer, comment: block.name2 };
     additionalInfos.set(block.name, info);
   }
   // find main info about e.g. coordinates in dxf.entities
-  const entities = dxf.entities;
+  const { entities } = dxf;
   for (const entity of entities) {
-    const layerEntryType =
-      entity.type + " " + entity.layer + (entity.name ? " " + entity.name : "");
+    const layerEntryType = `${entity.type} ${entity.layer}${
+      entity.name ? " " + entity.name : ""
+    }`;
     const subtypeName =
       pointTypesMap.get(entity?.name?.replace("ABM_", "")) ?? entity.name;
     if (!usedLayerEntryTypes.has(layerEntryType)) {
       const entryType = {
         type: entity.type,
         subtypeId: entity.name,
-        subtypeName: subtypeName,
+        subtypeName,
         layer: entity.layer,
-        color:
-          "#" +
-          layers[entity.layer].color.toString(16).toLowerCase().padStart(6, 0),
+        color: `#${layers[entity.layer].color
+          .toString(16)
+          .toLowerCase()
+          .padStart(6, 0)}`,
       };
       usedLayerEntryTypes.set(layerEntryType, entryType);
     }
@@ -135,26 +131,26 @@ function extractXmlFromDxf(dxf) {
     switch (entity.type) {
       // TODO delete unnecessary attributes?
       case "INSERT":
-        key = "P" + points.size;
+        key = `P${points.size}`;
         const point = {
           entryType: layerEntryType,
           layer: entity.layer,
           x: entity.position.x,
           y: entity.position.y,
           subtypeId: entity.name,
-          subtypeName: subtypeName,
+          subtypeName,
         };
         points.set(key, point);
         const info = additionalInfos.get(entity.name);
         if (info.layer == entity.layer) {
           points.get(key).comment = info.comment;
         }
-        const vectorKey = entity.position.x + "," + entity.position.y;
+        const vectorKey = `${entity.position.x},${entity.position.y}`;
         dxfVectorToGgbPointMap.set(vectorKey, key);
         break;
       case "LINE":
       case "LWPOLYLINE":
-        key = "L" + polyLineCount;
+        key = `L${polyLineCount}`;
         const line = {
           entryType: layerEntryType,
           layer: entity.layer,
@@ -164,7 +160,7 @@ function extractXmlFromDxf(dxf) {
         polyLineCount++;
         break;
       case "TEXT":
-        key = "T" + texts.size;
+        key = `T${texts.size}`;
         const text = {
           entryType: layerEntryType,
           layer: entity.layer,
@@ -182,30 +178,20 @@ function extractXmlFromDxf(dxf) {
   for (const [key, line] of dxfPolyLines) {
     // set first start point
     let startPoint = line.vertices[0];
-    let startVectorKey = startPoint.x + "," + startPoint.y;
+    let startVectorKey = `${startPoint.x},${startPoint.y}`;
     // add segments from (poly)line
     for (let i = 1; i < line.vertices.length; i++) {
       // find end point
       const endPoint = line.vertices[i];
-      const endVectorKey = endPoint.x + "," + endPoint.y;
+      const endVectorKey = `${endPoint.x},${endPoint.y}`;
       // segment handle
-      const ggbSegmentKey = key + "L" + i.toString(10);
+      const ggbSegmentKey = `${key}L${i.toString(10)}`;
       // create points if they don't exist
       if (!dxfVectorToGgbPointMap.has(startVectorKey)) {
-        createPoint(
-          usedLayerEntryTypes,
-          dxfVectorToGgbPointMap,
-          startPoint,
-          ggbSegmentKey + "S"
-        );
+        createPoint(dxfVectorToGgbPointMap, startPoint, `${ggbSegmentKey}S`);
       }
       if (!dxfVectorToGgbPointMap.has(endVectorKey)) {
-        createPoint(
-          usedLayerEntryTypes,
-          dxfVectorToGgbPointMap,
-          endPoint,
-          ggbSegmentKey + "G"
-        );
+        createPoint(dxfVectorToGgbPointMap, endPoint, `${ggbSegmentKey}G`);
       }
       // add new segment to ggbSegments
       const segment = {
@@ -227,7 +213,8 @@ function displayLayersAndTranslationSuggestion() {
   // add an option to select wanted ones
   // 1. add an html element for each and provide an option to remove each one
   // 2. provide an option to asign point/line/text types
-  //    TODO provide duplicate policies (e.g. nichtfestgestellteGrenze line stays; flurstueck line is removed)
+  //    TODO provide duplicate policies
+  //    (e.g. nichtfestgestellteGrenze line stays; flurstueck line is removed)
   //    What about line-point dependencies?
   // 3. collect the remaining ones afterwards
 
@@ -243,7 +230,7 @@ function displayLayersAndTranslationSuggestion() {
     tableRow.id = key;
     // selected - are the items of this layer included in the export?
     const cell0 = tableRow.insertCell(0);
-    const selectedSelectorId = key + "_selected";
+    const selectedSelectorId = `${key}_selected`;
     const selectCheckbox = document.createElement("input");
     selectCheckbox.className = "selected";
     selectCheckbox.type = "checkbox";
@@ -251,19 +238,17 @@ function displayLayersAndTranslationSuggestion() {
     selectCheckbox.id = selectedSelectorId;
     cell0.appendChild(selectCheckbox);
     // selected - label
-    const labelId = key + "_label";
+    const labelId = `${key}_label`;
     const label = document.createElement("label");
-    label.textContent =
-      entryType.type +
-      " " +
-      entryType.layer +
-      (entryType.subtypeName ? " " + entryType.subtypeName : "");
+    label.textContent = `${entryType.type} ${entryType.layer}${
+      entryType.subtypeName ? " " + entryType.subtypeName : ""
+    }`;
     label.htmlFor = selectedSelectorId;
     label.id = labelId;
     cell0.appendChild(label);
     // point or line style for the items of this layer
     const cell1 = tableRow.insertCell(1);
-    const styleSelectorId = key + "_style";
+    const styleSelectorId = `${key}_style`;
     const styleSelector =
       entryType.type == "INSERT" || entryType.type == "TEXT"
         ? createPointStyleSelector(styleSelectorId)
@@ -271,7 +256,7 @@ function displayLayersAndTranslationSuggestion() {
     cell1.appendChild(styleSelector);
     // color for the items of this layer
     const cell2 = tableRow.insertCell(2);
-    const colorSelectorId = key + "_color";
+    const colorSelectorId = `${key}_color`;
     const colorSelector = document.createElement("input");
     colorSelector.className = "color";
     colorSelector.type = "color";
@@ -280,7 +265,7 @@ function displayLayersAndTranslationSuggestion() {
     cell2.appendChild(colorSelector);
     // size for the items of this layer
     const cell3 = tableRow.insertCell(3);
-    const sizeSelectorId = key + "_size";
+    const sizeSelectorId = `${key}_size`;
     const sizeSelector = document.createElement("input");
     sizeSelector.className = "size";
     sizeSelector.type = "number";
@@ -300,45 +285,36 @@ function displayLayersAndTranslationSuggestion() {
   document.getElementById("translationY").value = translation.y;
 }
 
-function parseHandle(handle) {
-  return parseInt(handle, 16).toString(10);
-}
-
-function createPoint(
-  usedLayerEntryTypes,
-  vectorToPointMap,
-  newPoint,
-  segmentPointHandle
-) {
+function createPoint(vectorToPointMap, newPoint, segmentPointHandle) {
   const type = "INSERT";
   const layer = "linienpunkt_sonstiger";
   const subtypeId = "UNBEKANNT";
   const subtypeName = "Unbekannt";
 
-  const layerEntryType = type + " " + layer + " " + subtypeId;
+  const layerEntryType = `${type} ${layer} ${subtypeId}`;
   if (!usedLayerEntryTypes.has(layerEntryType)) {
     const entryType = {
-      type: type,
-      subtypeId: subtypeId,
-      subtypeName: subtypeName,
-      layer: layer,
+      type,
+      subtypeId,
+      subtypeName,
+      layer,
       color: "#dbdbdb",
     };
     usedLayerEntryTypes.set(layerEntryType, entryType);
   }
 
-  const key = "P" + segmentPointHandle;
+  const key = `P${segmentPointHandle}`;
   const point = {
     entryType: layerEntryType,
-    layer: layer,
+    layer,
     x: newPoint.x,
     y: newPoint.y,
-    subtypeId: subtypeId,
-    subtypeName: subtypeName,
+    subtypeId,
+    subtypeName,
   };
   points.set(key, point);
 
-  const vectorKey = newPoint.x + "," + newPoint.y;
+  const vectorKey = `${newPoint.x},${newPoint.y}`;
   vectorToPointMap.set(vectorKey, key);
 }
 
@@ -358,12 +334,11 @@ function createPointStyleSelector(styleSelectorId) {
 }
 
 function createLineStyleSelector(styleSelectorId) {
-  const dotStyles = { 0: "-----", 15: "- - -" };
+  const dotStyles = Object.entries({ 0: "-----", 15: "- - -" });
   const styleSelector = document.createElement("select");
   styleSelector.className = "style";
   styleSelector.id = styleSelectorId;
-  for (const i in dotStyles) {
-    const style = dotStyles[i];
+  for (const [i, style] in dotStyles) {
     const option = document.createElement("option");
     option.value = i;
     option.text = style;
@@ -496,10 +471,10 @@ function saveToGGB(ggbContent) {
   const ggbHeader =
     '<geogebra format="5.0" >\n' +
     '<construction title="" author="" date="">\n';
-  const ggbFooter = "</construction>\n" + "</geogebra>\n";
+  const ggbFooter = "</construction>\n</geogebra>\n";
   zip.file("geogebra.xml", xmlHeader + ggbHeader + ggbContent + ggbFooter);
   // save as ziped ggb file
-  zip.generateAsync({ type: "blob" }).then(function (content) {
-    saveAs(content, fileName + ".ggb");
+  zip.generateAsync({ type: "blob" }).then((content) => {
+    saveAs(content, `${fileName}.ggb`);
   });
 }
