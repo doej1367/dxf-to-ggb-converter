@@ -42,7 +42,7 @@
       let lowerLeftCorner = {};
       let usedLayerEntryTypes = new Map();
       let points = new Map();
-      let dxfPolyLines = new Map();
+      let polyLineCount = 0;
       let ggbSegments = new Map();
       let texts = new Map();
 
@@ -55,7 +55,7 @@
         lowerLeftCorner = {};
         usedLayerEntryTypes = new Map();
         points = new Map();
-        dxfPolyLines = new Map();
+        polyLineCount = 0;
         ggbSegments = new Map();
         texts = new Map();
         // load files
@@ -138,6 +138,7 @@
 
         // temporary variables for conversion
         let dxfVectorToGgbPointMap = new Map();
+        let dxfPolyLines = new Map();
 
         // find additional info in dxf.blocks
         let additionalInfos = new Map();
@@ -196,13 +197,14 @@
               break;
             case "LINE":
             case "LWPOLYLINE":
-              key = "L" + dxfPolyLines.size;
+              key = "L" + polyLineCount;
               const line = {
                 entryType: layerEntryType,
                 layer: entity.layer,
                 vertices: entity.vertices,
               };
               dxfPolyLines.set(key, line);
+              polyLineCount++;
               break;
             case "TEXT":
               key = "T" + texts.size;
