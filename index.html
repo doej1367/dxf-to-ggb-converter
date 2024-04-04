@@ -42,6 +42,7 @@
       let lowerLeftCorner = {};
       let usedLayerEntryTypes = new Map();
       let points = new Map();
+      let dxfPolyLines = new Map();
       let ggbSegments = new Map();
       let texts = new Map();
 
@@ -54,6 +55,7 @@
         lowerLeftCorner = {};
         usedLayerEntryTypes = new Map();
         points = new Map();
+        dxfPolyLines = new Map();
         ggbSegments = new Map();
         texts = new Map();
         // load files
@@ -136,7 +138,6 @@
 
         // temporary variables for conversion
         let dxfVectorToGgbPointMap = new Map();
-        let dxfPolyLines = new Map();
 
         // find additional info in dxf.blocks
         let additionalInfos = new Map();
@@ -226,10 +227,10 @@
           // add segments from (poly)line
           for (let i = 1; i < line.vertices.length; i++) {
             // find end point
-            let endPoint = line.vertices[i];
-            let endVectorKey = endPoint.x + "," + endPoint.y;
+            const endPoint = line.vertices[i];
+            const endVectorKey = endPoint.x + "," + endPoint.y;
             // segment handle
-            let ggbSegmentKey = key + "L" + i.toString(10);
+            const ggbSegmentKey = key + "L" + i.toString(10);
             // create points if they don't exist
             if (!dxfVectorToGgbPointMap.has(startVectorKey)) {
               createPoint(
