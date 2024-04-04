@@ -11,7 +11,7 @@ let texts = new Map();
 
 // add listener for file input
 const fileInputElement = document.getElementById("inputfile");
-fileInputElement.addEventListener("change", function () {
+fileInputElement.addEventListener("change", () => {
   // reset variables if file is changed
   document.getElementById("output").textContent = "";
   fileName = "";
@@ -27,13 +27,13 @@ fileInputElement.addEventListener("change", function () {
     fileReaders.push(
       new Promise(function (resolve, reject) {
         const inputReader = new FileReader();
-        inputReader.onload = function () {
+        inputReader.onload = () => {
           resolve({
             fileName: file.name,
             fileContent: inputReader.result,
           });
         };
-        inputReader.onerror = function () {
+        inputReader.onerror = () => {
           reject(inputReader);
         };
         inputReader.readAsText(file);
