@@ -1,6 +1,6 @@
 // Executed on "Export to GGB" button
 function exportGgbFile() {
-  // TODO remove duplicate lines
+  // TODO remove duplicate line segments
 
   // read layer customizations from ui
   const layerStyles = new Map();
