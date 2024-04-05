@@ -97,7 +97,7 @@ function exportGgbFile() {
       `</element>\n`;
   });
 
-  saveToGGB(ggbContent);
+  saveToGGB(ggbContent, translation);
 
   document.getElementById("output").textContent += "\nSuccess!";
 }
@@ -115,7 +115,7 @@ function hexToRgb(hex) {
 }
 
 // output file to the download folder
-function saveToGGB(ggbContent) {
+function saveToGGB(ggbContent, translation) {
   // start zip creation
   const zip = new JSZip();
   // create an empty geogebra.xml file
@@ -132,12 +132,18 @@ function saveToGGB(ggbContent) {
 
   const panelWidth = 570;
   const panelHeight = 440;
-  const xZero = spaceLeft;
-  const yZero = panelHeight - spaceBottom;
 
   const xScale = (panelWidth - spaceLeft - spaceRight) / mapWidth;
   const yScale = (panelHeight - spaceBottom - spaceTop) / mapHeight;
   const scale = Math.min(xScale, yScale);
+
+  const xDistanceFromOrigin =
+    (Math.floor(lowerLeftCorner.x) - translation.x) * scale;
+  const yDistanceFromOrigin =
+    (Math.floor(lowerLeftCorner.y) - translation.y) * scale;
+
+  const xZero = spaceLeft - xDistanceFromOrigin;
+  const yZero = panelHeight - spaceBottom + yDistanceFromOrigin;
 
   const ggbHeader =
     `<geogebra format="5.0" >\n` +
