@@ -10,12 +10,15 @@
     <input id="inputfile" type="file" name="inputfile" multiple />
     <h3>2. Select and costumize the layerSymbols you want to export</h3>
     <table id="layerList"></table>
+    <h3>3. Convert UTM32 to GK4</h3>
+    <input id="conversion" type="checkbox" name="conversion" />
+    <label for="conversion">Convert from new UTM32 to old GK4</label>
     <h3>
-      3. Enter values to substract from every point (move map closer to origin)
+      4. Enter values to substract from every point (move map closer to origin)
     </h3>
     <input id="translationX" type="number" name="translationX" />
     <input id="translationY" type="number" name="translationY" />
-    <h3>4. Export the data as a GGB file for Geogebra</h3>
+    <h3>5. Export the data as a GGB file for Geogebra</h3>
     <button id="export">Export to GGB</button>
     <br />
     <br />

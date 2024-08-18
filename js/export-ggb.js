@@ -16,10 +16,22 @@ function exportGgbFile() {
     layerStyles.set(element.id, layerStyle);
   });
 
+  // read map conversion value from ui
+  /* TODO adjust conversion factor for each point, depending on how far it is away from the "Mittelmeridian"
+   * https://de.wikipedia.org/wiki/Gau%C3%9F-Kr%C3%BCger-Koordinatensystem#Unterschied_zu_UTM
+   * Der Mittelmeridian wird dadurch um den Faktor 0,9996 = 40 cm / km verkürzt dargestellt.
+   * Mit zunehmendem Abstand vom Mittelmeridian nach Osten oder nach Westen verringert sich
+   * diese Verkürzung aufgrund der anwachsenden Abbildungsverzerrung innerhalb der Zone;
+   * bei etwa 180 km Abstand vom Mittelmeridian verschwindet die Längenverzerrung.
+   */
+  const conversion = document.getElementById("conversion").checked
+    ? 1.0 / 0.9996
+    : 1;
+
   // read map translation values from ui
   const translation = {
-    x: document.getElementById("translationX").value,
-    y: document.getElementById("translationY").value,
+    x: document.getElementById("translationX").value * conversion,
+    y: document.getElementById("translationY").value * conversion,
   };
 
   // prepare xml data for final file
@@ -39,8 +51,8 @@ function exportGgbFile() {
       `  <labelMode val="0"/>\n` +
       `  <fixed val="true"/>\n` +
       `  <auxiliary val="true"/>\n` +
-      `  <coords x="${point.x - translation.x}" y="${
-        point.y - translation.y
+      `  <coords x="${point.x * conversion - translation.x}" y="${
+        point.y * conversion - translation.y
       }" z="1.0"/>\n` +
       `  <pointSize val="${style.size}"/>\n` +
       `  <pointStyle val="${style.style}"/>\n` +
@@ -62,8 +74,8 @@ function exportGgbFile() {
       `  <labelMode val="3"/>\n` +
       `  <fixed val="true"/>\n` +
       `  <auxiliary val="true"/>\n` +
-      `  <coords x="${text.x - translation.x}" y="${
-        text.y - translation.y
+      `  <coords x="${text.x * conversion - translation.x}" y="${
+        text.y * conversion - translation.y
       }" z="1.0"/>\n` +
       `  <pointSize val="${style.size}"/>\n` +
       `  <pointStyle val="${style.style}"/>\n` +
@@ -97,7 +109,7 @@ function exportGgbFile() {
       `</element>\n`;
   });
 
-  saveToGGB(ggbContent, translation);
+  saveToGGB(ggbContent, translation, conversion);
 
   document.getElementById("output").textContent += "\nSuccess!";
 }
@@ -115,15 +127,15 @@ function hexToRgb(hex) {
 }
 
 // output file to the download folder
-function saveToGGB(ggbContent, translation) {
+function saveToGGB(ggbContent, translation, conversion) {
   // start zip creation
   const zip = new JSZip();
   // create an empty geogebra.xml file
   // and add the elements and commands from the ggbContent
   const xmlHeader = '<?xml version="1.0" encoding="utf-8"?>\n';
 
-  const mapWidth = upperRightCorner.x - lowerLeftCorner.x;
-  const mapHeight = upperRightCorner.y - lowerLeftCorner.y;
+  const mapWidth = (upperRightCorner.x - lowerLeftCorner.x) * conversion;
+  const mapHeight = (upperRightCorner.y - lowerLeftCorner.y) * conversion;
 
   const spaceLeft = 50;
   const spaceRight = 10;
@@ -138,9 +150,9 @@ function saveToGGB(ggbContent, translation) {
   const scale = Math.min(xScale, yScale);
 
   const xDistanceFromOrigin =
-    (Math.floor(lowerLeftCorner.x) - translation.x) * scale;
+    (Math.floor(lowerLeftCorner.x * conversion) - translation.x) * scale;
   const yDistanceFromOrigin =
-    (Math.floor(lowerLeftCorner.y) - translation.y) * scale;
+    (Math.floor(lowerLeftCorner.y * conversion) - translation.y) * scale;
 
   const xZero = spaceLeft - xDistanceFromOrigin;
   const yZero = panelHeight - spaceBottom + yDistanceFromOrigin;
