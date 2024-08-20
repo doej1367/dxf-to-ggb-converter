@@ -24,6 +24,8 @@ function exportGgbFile() {
 
   // prepare xml data for final file
   let ggbContent = "";
+  // prepare txt data for final file
+  let txtContent = "";
 
   points.forEach((point, key, map) => {
     const style = layerStyles.get(point.entryType);
@@ -46,6 +48,7 @@ function exportGgbFile() {
       `  <pointStyle val="${style.style}"/>\n` +
       `  <caption val="${point.subtypeName} (${point.layer})"/>\n` +
       "</element>\n";
+    txtContent += `${key} 32${point.x} ${point.y}\r\n`;
   });
 
   texts.forEach((text, key, map) => {
@@ -69,6 +72,7 @@ function exportGgbFile() {
       `  <pointStyle val="${style.style}"/>\n` +
       `  <caption val="${text.text}"/>\n` +
       "</element>\n";
+    txtContent += `${key} 32${text.x} ${text.y}\r\n`;
   });
 
   ggbSegments.forEach((segment, key, map) => {
@@ -98,6 +102,11 @@ function exportGgbFile() {
   });
 
   saveToGGB(ggbContent, translation);
+
+  var blob = new Blob([txtContent], {
+    type: "text/plain;charset=utf-8",
+  });
+  saveAs(blob, `${fileName}.txt`);
 
   document.getElementById("output").textContent += "\nSuccess!";
 }
