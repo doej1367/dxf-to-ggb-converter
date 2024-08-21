@@ -25,7 +25,14 @@ function exportGgbFile() {
   // prepare xml data for final file
   let ggbContent = "";
   // prepare txt data for final file
-  let txtContent = "";
+  let txtContent =
+    `# This file containts the raw utm32 data\r\n` +
+    `# to be uploaded to the following online converter:\r\n` +
+    `# https://sapos.bayern.de/coord_tm.php\r\n` +
+    `# The resulting txt file with the gk4 points\r\n` +
+    `# can be used together with the utm32 dxf files\r\n` +
+    `# to create a ggb file with points in gk4.\r\n` +
+    `\r\n`;
 
   points.forEach((point, key, map) => {
     const style = layerStyles.get(point.entryType);
@@ -101,13 +108,18 @@ function exportGgbFile() {
       `</element>\n`;
   });
 
+  // gbb export
   saveToGGB(ggbContent, translation);
 
-  var blob = new Blob([txtContent], {
-    type: "text/plain;charset=utf-8",
-  });
-  saveAs(blob, `${fileName}.txt`);
+  // txt export
+  if (pointsGK4.size <= 0) {
+    var blob = new Blob([txtContent], {
+      type: "text/plain;charset=utf-8",
+    });
+    saveAs(blob, `${fileName}.txt`);
+  }
 
+  // status message
   document.getElementById("output").textContent += "\nSuccess!";
 }
 

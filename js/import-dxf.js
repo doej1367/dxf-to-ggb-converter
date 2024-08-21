@@ -45,12 +45,11 @@ function importFiles() {
     }
 
     // replace utm32 coordinates with gk4 in case a txt with that data was imported
-    if (pointsGK4.size <= 0) {
-      return;
+    if (pointsGK4.size > 0) {
+      lowerLeftCorner = {};
+      convertToGK4(points);
+      convertToGK4(texts);
     }
-    lowerLeftCorner = {};
-    convertToGK4(points);
-    convertToGK4(texts);
 
     // update GUI from input data
     displayLayersAndTranslationSuggestion();
