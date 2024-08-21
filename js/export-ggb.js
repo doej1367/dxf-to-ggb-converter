@@ -178,6 +178,6 @@ function saveToGGB(ggbContent, translation) {
   zip.file("geogebra.xml", xmlHeader + ggbHeader + ggbContent + ggbFooter);
   // save as ziped ggb file
   zip.generateAsync({ type: "blob" }).then((content) => {
-    saveAs(content, `${fileName}.ggb`);
+    saveAs(content, `${fileName}${pointsGK4.size >= 0 ? "_gk4t" : ""}.ggb`);
   });
 }
