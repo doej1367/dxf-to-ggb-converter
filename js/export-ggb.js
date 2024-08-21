@@ -116,7 +116,7 @@ function exportGgbFile() {
     var blob = new Blob([txtContent], {
       type: "text/plain;charset=utf-8",
     });
-    saveAs(blob, `${fileName}.txt`);
+    saveAs(blob, `${fileName}_utm32.txt`);
   }
 
   // status message
