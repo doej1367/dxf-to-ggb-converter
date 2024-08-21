@@ -180,7 +180,7 @@ function saveToGGB(ggbContent, translation) {
   zip.generateAsync({ type: "blob" }).then((content) => {
     saveAs(
       content,
-      `${fileName}${pointsGK4.size >= 0 ? "_gk4t" : "_utm32"}.ggb`
+      `${fileName}${pointsGK4.size > 0 ? "_gk4t" : "_utm32"}.ggb`
     );
   });
 }
