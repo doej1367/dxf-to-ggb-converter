@@ -1,5 +1,5 @@
 // Executed once files are selected
-function importDxfFiles() {
+function importFiles() {
   // reset variables if file is changed
   document.getElementById("output").textContent = "";
   fileName = "";
@@ -32,21 +32,56 @@ function importDxfFiles() {
   // process files and
   // display layers and translation suggestion
   Promise.all(fileReaders).then((results) => {
-    results.forEach((result) => {
-      processFile(result.fileName, result.fileContent);
-    });
+    // parse input files
+    for (const result of results) {
+      if (result.fileName.search(/^.*\.txt$/g) >= 0) {
+        processTxtFile(result.fileContent);
+      }
+    }
+    for (const result of results) {
+      if (result.fileName.search(/^.*\.dxf$/g) >= 0) {
+        processDxfFile(result.fileName, result.fileContent);
+      }
+    }
+
+    // replace utm32 coordinates with gk4 in case a txt with that data was imported
+    if (pointsGK4.size <= 0) {
+      return;
+    }
+    lowerLeftCorner = {};
+    convertToGK4(points);
+    convertToGK4(texts);
+
+    // update GUI from input data
     displayLayersAndTranslationSuggestion();
   });
 }
 
+function processTxtFile(content) {
+  // parse txt retrieved from https://sapos.bayern.de/coord_tm.php
+  content.split(/\r?\n/g).forEach((line) => {
+    const pointRegex = /^[^ ]* ([0-9]+(?:\.[0-9]+)?) ([0-9]+(?:\.[0-9]+)?)$/g;
+    if (line.startsWith(`# `) || line.search(pointRegex) < 0) {
+      return;
+    }
+    const pointEntryData = line.split(` `);
+    const key = pointEntryData[0];
+    const point = {
+      x: Number(pointEntryData[1]),
+      y: Number(pointEntryData[2]),
+    };
+    pointsGK4.set(key, point);
+  });
+}
+
 // process file
-function processFile(dxfFileName, dxfContent) {
+function processDxfFile(dfxFileName, content) {
   // parse dxf file
   const parser = new DxfParser();
   try {
-    const dxf = parser.parseSync(dxfContent);
+    const dxf = parser.parseSync(content);
     extractXmlFromDxf(dxf);
-    fileName += dxfFileName.replace(".dxf", "");
+    fileName += dfxFileName.replace(".dxf", "");
   } catch (err) {
     document.getElementById(
       "output"
@@ -105,6 +140,7 @@ function extractXmlFromDxf(dxf) {
       additionalInfos.set(block.name, info);
     }
   }
+
   // find main info about e.g. coordinates in dxf.entities
   const { entities } = dxf;
   entities.forEach((entity) => {
@@ -174,6 +210,7 @@ function extractXmlFromDxf(dxf) {
         break;
     }
   });
+
   // find and add node handles for lines and polylines
   dxfPolyLines.forEach((line, key, map) => {
     // set first start point
@@ -239,4 +276,28 @@ function createPoint(vectorToPointMap, newPoint, segmentPointHandle) {
 
   const vectorKey = `${newPoint.x},${newPoint.y}`;
   vectorToPointMap.set(vectorKey, key);
+}
+
+function convertToGK4(pointMap) {
+  for (const key of pointMap.keys()) {
+    const pointGK4 = pointsGK4.get(key);
+    if (pointGK4) {
+      if (!lowerLeftCorner.x || pointGK4.x < lowerLeftCorner.x) {
+        lowerLeftCorner.x = pointGK4.x;
+      }
+      if (!lowerLeftCorner.y || pointGK4.y < lowerLeftCorner.y) {
+        lowerLeftCorner.y = pointGK4.y;
+      }
+      if (!upperRightCorner.x || pointGK4.x > upperRightCorner.x) {
+        upperRightCorner.x = pointGK4.x;
+      }
+      if (!upperRightCorner.y || pointGK4.y > upperRightCorner.y) {
+        upperRightCorner.y = pointGK4.y;
+      }
+      pointMap.get(key).x = pointGK4.x;
+      pointMap.get(key).y = pointGK4.y;
+    } else {
+      pointMap.delete(key);
+    }
+  }
 }

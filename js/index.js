@@ -7,11 +7,12 @@ let points = new Map();
 let polyLineCount = 0;
 let ggbSegments = new Map();
 let texts = new Map();
+let pointsGK4 = new Map();
 
 // add listener for file input
 const fileInputElement = document.getElementById("inputfile");
 fileInputElement.addEventListener("change", () => {
-  importDxfFiles();
+  importFiles();
 });
 
 // add listener for export button
